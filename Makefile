@@ -7,7 +7,7 @@ run:all
 	rm -rf core
 	ulimit -c unlimited
 	clear
-	BCUBE_RANK=1 ./src/proc
+	BCUBE_RANK=8 ./src/proc
 
 share:
 	make clean -C src

@@ -4,6 +4,7 @@
 #include <thread>
 #include <string>
 #include <assert.h>
+#include <cstring>
 
 
 extern int TYPE_SIZE[];
@@ -93,6 +94,7 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 				}
 				{/*release reources*/
 					std::free(it->receive_ptr);
+					//printf("in allreduce: free %p\n", it->receive_ptr);
 					it->receive_ptr = nullptr;
 				}
 			}
@@ -117,6 +119,7 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 				}
 				{/*release reources*/
 					std::free(it->receive_ptr);
+					//printf("in allreduce: free %p\n", it->receive_ptr);
 					it->receive_ptr = nullptr;
 				}
 			}
@@ -136,6 +139,8 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 					_a_tensor.tensor_ptr=nullptr;
 					,but now, we will release them last.
 				*/
+				std::free(_a_tensor.tensor_ptr);
+				//printf("in allgather reduce: free %p\n", _a_tensor.tensor_ptr);
 				_a_tensor.tensor_ptr = it->gather_ptr[index].tensor_ptr;
 				_a_tensor.tensor_shape = it->gather_ptr[index].tensor_shape;
 			}
@@ -150,21 +155,29 @@ void release_src(tensor_table_entry& e)
 	std::vector<void*> free_ptr;
 	free_ptr.push_back(e.tensor_data);
 	free_ptr.push_back(nullptr);
-	free(e.tensor_data);
-	e.tensor_data = nullptr;
+	
 	for (auto& it : e.gather_tensor)
 	{
 		if (find(free_ptr.begin(), free_ptr.end(), it.tensor_ptr) == free_ptr.end())
 		{
 			std::free(it.tensor_ptr);
+			//printf("in release: free %p\n", it.tensor_ptr);
 			free_ptr.push_back(it.tensor_ptr);
 			it.tensor_ptr = nullptr;
 		}
+		else if(it.tensor_ptr != e.tensor_data)
+		{
+			perror("error in free data");
+		}
 	}
+	std::free(e.tensor_data);
+	//printf("in allreduce tensor data: free %p\n", e.tensor_data);
+	e.tensor_data = nullptr;
+
 	return;
 }
 
-
+static int reduce_loop = 0;
 #define _DEBUG_TENSOR_GEN_
 static void show_tensor(tensor_table_entry& e,int status=ALLREDUCE)
 {
@@ -176,17 +189,20 @@ static void show_tensor(tensor_table_entry& e,int status=ALLREDUCE)
 	if (e.tensor_ops == ALLREDUCE)
 	{
 		sscanf(e.tensor_name.c_str(), "_%d_allreduce_%d", &loops, &node_id);
+		reduce_loop = loops;
 		if ((loops % 100) || node_id != 100123)return;
 	}
 	else if (e.tensor_ops == ALLGATHER)
 	{
 		sscanf(e.tensor_name.c_str(), "_%d_allgather_%d", &loops, &node_id);
-		if ((loops % 1000) || node_id != 1003)return;
+		reduce_loop = loops;
+		if ((loops % 100) || node_id != 1003)return;
 	}
 	else if (e.tensor_ops == BROADCAST)
 	{
 		sscanf(e.tensor_name.c_str(), "_%d_broadcast_%d", &loops, &node_id);
-		if ((loops % 1000) || node_id != 1003)return;
+		reduce_loop = loops;
+		if ((loops % 100) || node_id != 1003)return;
 	}
 #endif // !_DEBUG_TENSOR_GEN_
 	printf("%s ", e.tensor_name.c_str());
@@ -199,6 +215,7 @@ static void show_tensor(tensor_table_entry& e,int status=ALLREDUCE)
 		if (0)
 		{
 			std::free(e.tensor_data);
+			//printf("in allreduce: free %p\n", e.tensor_data);
 			e.tensor_data = nullptr;
 		}
 	}
@@ -363,15 +380,17 @@ void allgather_enqueue(bcube_global_struct& bgs, int unique_id, int loops)
 	e.tensor_name = "_" + std::to_string(loops) + "_allgather_" + std::to_string(unique_id);
 	e.available_nums = 18;
 	e.tensor_size = 18;
+	e.tensor_data = (void*)a_;
 	e.gather_tensor.resize(e.tensor_size);
 	{
 		for (auto& it : e.gather_tensor)
 		{
 			it.tensor_shape = e.tensor_size;
-			it.tensor_ptr = (void*)a_;
+			it.tensor_ptr = (void*)std::malloc(18*sizeof(int));
+			//printf("in allgather_enqueue: malloc %p\n", it.tensor_ptr);
+			std::memcpy(it.tensor_ptr, (void*)a_,18*sizeof(int));
 		}
 	}
-	e.tensor_data = (void*)a_;
 	e.tensor_type = T_INT32;
 	e.tensor_ops = ALLGATHER;
 	if (0)
@@ -410,7 +429,9 @@ void broadcast_enqueue(bcube_global_struct& bgs, int unique_id, int loops)
 		for (auto& it : e.gather_tensor)
 		{
 			it.tensor_shape = e.tensor_size;
-			it.tensor_ptr = (void*)a_;
+			it.tensor_ptr = (void*)std::malloc(18 * sizeof(int));
+			//printf("in broadcast_enqueue: malloc %p\n", it.tensor_ptr);
+			std::memcpy(it.tensor_ptr, (void*)a_, 18 * sizeof(int));
 		}
 	}
 	e.tensor_data = (void*)a_;
@@ -439,16 +460,14 @@ void allreduce_test(bcube_global_struct& bcube_gs)
 	while (1)
 	{
 		std::vector<std::thread> thread_handle;
-		int threadnum = 12;
+		int threadnum = 60;
 		while (threadnum--)
 		{
 			thread_handle.push_back(std::thread(allreduce_enque, std::ref(bcube_gs), threadnum, loops));
 		}
 		for (auto& thread_id : thread_handle)
 			thread_id.join();
-		//std::cout << "create tensors done" << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		//std::this_thread::sleep_for(std::chrono::seconds(1000));
 		loops++;
 	}
 }
@@ -467,6 +486,22 @@ void allgather_test(bcube_global_struct& bcube_gs)
 			thread_id.join();
 		//std::cout << "create tensors done" << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		int cycle = 0;
+		int receive_size = 0;
+		while (loops>(reduce_loop+20))
+		{
+			cycle++;
+			int rrr = (int)bcube_gs.receiv_tmp_tensor.size();
+			if (receive_size != rrr)
+			{
+				receive_size = rrr;
+				cycle = 0;
+			}
+			//printf("in %d loops, receiv_tmp_tensor.size() = %d\n", loops, rrr);
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			if ((cycle > 10) && rrr == receive_size)
+				exit(-1);
+		}
 		//std::this_thread::sleep_for(std::chrono::seconds(10));
 		loops++;
 	}
@@ -477,7 +512,7 @@ void broadcast_test(bcube_global_struct& bcube_gs)
 	while (1)
 	{
 		std::vector<std::thread> thread_handle;
-		int threadnum = 1;
+		int threadnum = 12;
 		while (threadnum--)
 		{
 			thread_handle.push_back(std::thread(broadcast_enqueue, std::ref(bcube_gs), threadnum, loops));
@@ -486,7 +521,7 @@ void broadcast_test(bcube_global_struct& bcube_gs)
 			thread_id.join();
 		//std::cout << "create tensors done" << std::endl;
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		std::this_thread::sleep_for(std::chrono::seconds(10));
+		//std::this_thread::sleep_for(std::chrono::seconds(10));
 		loops++;
 	}
 }
@@ -498,7 +533,7 @@ void bcube_ops_test(void)
 	
 	allreduce_test(bcube_gs);
 	//allgather_test(bcube_gs);
-	//broadcast_test(bcube_gs);
+	broadcast_test(bcube_gs);
 	
 	return;
 }

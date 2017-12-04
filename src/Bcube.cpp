@@ -169,6 +169,7 @@ void recv_loops(bcube_global_struct& bgs)
 				assert((msg_buf.msg_length >= msg_len) && (msg_buf.data[0] == ','));
 				void* new_msg = (void*)std::malloc(msg_buf.msg_length);
 				assert(new_msg != nullptr);
+				//printf("in receive msg loops: malloc %p\n", new_msg);
 				memset(new_msg, 0, msg_buf.msg_length);
 				if (recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, MSG_PEEK) != msg_buf.msg_length)
 				{
@@ -181,9 +182,10 @@ void recv_loops(bcube_global_struct& bgs)
 					show_msg(new_msg);
 					tensor_msg::decode(e, new_msg);
 					insert_to_recv_queue(bgs, e);
-					std::free(new_msg);
-					new_msg = nullptr;
 				}
+				std::free(new_msg);
+				//printf("in receive loops: free %p\n", new_msg);
+				new_msg = nullptr;
 			}
 		}
 	}
@@ -518,8 +520,48 @@ static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pi
 		res_len = write(it.socket_fd, (void*)(tmp_msg), len);
 		assert(res_len == len);
 		std::free(tmp_msg);
+		//printf("in send_assist_thread : free %p\n", tmp_msg);
 		tmp_msg = nullptr;
 	}
+}
+#include <condition_variable>
+struct thread_assis
+{
+	std::condition_variable cv;
+	std::mutex send_mutex;
+	tensor_table_entry e;
+	process steps;
+	bool ready=false;
+	std::vector<bool> fin;
+} send_pack;
+
+static bool first_init = true;
+
+void send_thread(thread_assis& _send_pack, int pid)
+{
+	while (true)
+	{
+		printf("run in send thread\n");
+		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
+		while ((!_send_pack.ready)||_send_pack.fin[pid])_send_pack.cv.wait(send_lock);
+		send_assist_thread(_send_pack.e,_send_pack.steps,pid);
+		_send_pack.fin[pid] = true;
+	}
+	
+}
+#include <pthread.h> 
+void* send_thread_2(void* _pid)
+{
+	auto pid = *(int*)_pid;
+	thread_assis& _send_pack = send_pack;
+	while (true)
+	{
+		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
+		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
+		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
+		_send_pack.fin[pid] = true;
+	}
+	return NULL;
 }
 
 void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
@@ -527,18 +569,88 @@ void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
 	auto & steps = send_strategy[stage];
+	auto& _send_pack_here = send_pack;
 
 	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
+	if (first_init)
+	{
+		first_init = false;
+		_send_pack_here.fin.resize(2);
+		for (int nums = 0; nums < 2; nums++)
+		{
+			pthread_t id1;
+			if (pthread_create(&id1,NULL,send_thread_2,(void*)&nums) != 0)
+			{
+				printf("error in create thread");
+				while (1);
+			}
+			sleep(2);
+		}
+	}
+	std::unique_lock<std::mutex> send_lock(_send_pack_here.send_mutex);
+	_send_pack_here.steps = steps;
+	_send_pack_here.e = e;
+	_send_pack_here.fin[0] = false;
+	_send_pack_here.fin[1] = false;
+	_send_pack_here.ready = true;
+	_send_pack_here.cv.notify_all();
+	send_lock.unlock();
 
-	std::thread p0 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 0);
-	std::thread p1 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 1);
-	p0.join();
-	p1.join();
-	//printf("%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
-	//while (stage == 1);
-	/*send out...*/
+	while (_send_pack_here.fin[0] == false || _send_pack_here.fin[1] == false);
 	return;
 }
+//void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
+//{
+//	auto& send_strategy = bs.my_strategy;
+//	assert((size_t)stage < send_strategy.size());
+//	auto & steps = send_strategy[stage];
+//	auto& _send_pack_here = send_pack;
+//
+//	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
+//	if (first_init)
+//	{
+//		first_init = false;
+//		_send_pack_here.fin.resize(2);
+//		for (int nums = 0; nums < 2; nums++)
+//		{
+//
+//			std::thread(send_thread, std::ref(_send_pack_here), nums);
+//			printf("create a thread...\n");
+//			std::this_thread::sleep_for(std::chrono::seconds(2));
+//
+//		}
+//	}
+//	std::unique_lock<std::mutex> send_lock(_send_pack_here.send_mutex);
+//	_send_pack_here.steps = steps;
+//	_send_pack_here.e = e;
+//	_send_pack_here.fin[0] = false;
+//	_send_pack_here.fin[1] = false;
+//	_send_pack_here.ready = true;
+//	_send_pack_here.cv.notify_all();
+//
+//	while (_send_pack_here.fin[0] == false || _send_pack_here.fin[1] == false);
+//	//printf("%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
+//	//while (stage == 1);
+//	/*send out...*/
+//	return;
+//}
+//void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
+//{
+//	auto& send_strategy = bs.my_strategy;
+//	assert((size_t)stage < send_strategy.size());
+//	auto & steps = send_strategy[stage];
+//
+//	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
+//
+//	std::thread p0 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 0);
+//	std::thread p1 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 1);
+//	p0.join();
+//	p1.join();
+//	//printf("%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
+//	//while (stage == 1);
+//	/*send out...*/
+//	return;
+//}
 
 
 

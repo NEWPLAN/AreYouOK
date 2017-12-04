@@ -49,6 +49,7 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 		int tensor_length = (msg_tp->nums)*TYPE_SIZE[(msg_tp->tensor_type)];
 		e.receive_ptr = (char*)std::malloc(tensor_length);
 		assert(e.receive_ptr != nullptr);
+		//printf("in decode: malloc %p\n", e.receive_ptr);
 		memset(e.receive_ptr, 0, tensor_length);
 		std::memcpy(e.receive_ptr, tensor_data, tensor_length);
 		//printf("decode %s done, tensor length is:%d\n!\n",e.tensor_name.c_str(), tensor_length);
@@ -79,6 +80,7 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 			auto block_size = *(int*)tensor_shape;
 			_part_tensor.tensor_shape = block_size;
 			_part_tensor.tensor_ptr = (void*)std::malloc(block_size*type_size);
+			//printf("in allgather_decode: malloc %p\n", _part_tensor.tensor_ptr);
 			assert(_part_tensor.tensor_ptr != nullptr);
 			std::memcpy(_part_tensor.tensor_ptr, tensor_data, block_size*type_size);
 			tensor_data += block_size*type_size;
@@ -113,6 +115,7 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg, int start_pos, int bl
 		//printf("sizeof(int):%d, element nums: %d, type_size: %d, tensor_size:%d, msg_length:%d\n", sizeof(int), element_nums, type_size, tensor_size,*total_length);
 		auto malloc_ptr = (char*)std::malloc(*total_length);
 		assert(malloc_ptr != nullptr);
+		//printf("in encode: malloc %p\n", malloc_ptr);
 		memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
 		//std::cout<<"tensor name: "<<e.tensor_name<<" name length: "<<e.tensor_name.length()<<std::endl;
@@ -156,6 +159,7 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg, int start_pos, int bl
 		//printf("sizeof(int):%d, element nums: %d, type_size: %d, tensor_size:%d, msg_length:%d\n", sizeof(int), element_nums, type_size, tensor_size,*total_length);
 		auto malloc_ptr = (char*)std::malloc(*total_length);
 		assert(malloc_ptr != nullptr);
+		//printf("in allgather_encode: malloc %p\n", malloc_ptr);
 		memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
 		//std::cout<<"tensor name: "<<e.tensor_name<<" name length: "<<e.tensor_name.length()<<std::endl;
