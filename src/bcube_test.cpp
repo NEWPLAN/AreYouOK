@@ -1,8 +1,8 @@
 #include <cstdio>
 #include <iostream>
 #include <vector>
-#include "Bcube.h"
-#include "Bcube_ops.h"
+#include "bcube_comm.h"
+#include "bcube_ops.h"
 
 
 /*

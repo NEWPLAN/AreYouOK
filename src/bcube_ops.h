@@ -1,14 +1,14 @@
 #ifndef __TENSOTFLOW_BCUBE_OPS__
 #define __TENSOTFLOW_BCUBE_OPS__
-#include "Utils.h"
+#include "bcube_utils.h"
 #include <vector>
 #include <iostream>
 #include <atomic>
 #include <thread>
 #include <string>
 #include <mutex>
-#include "Bcube.h"
-#include "Message.h"
+#include "bcube_comm.h"
+#include "bcube_message.h"
 #include <unordered_map>
 #include <queue>
 

@@ -10,10 +10,10 @@
 #include <cstring>
 #include <cstdio>
 
-#include "Utils.h"
-#include "Bcube_ops.h"
-#include "Bcube.h"
-#include "Message.h"
+#include "bcube_utils.h"
+#include "bcube_ops.h"
+#include "bcube_comm.h"
+#include "bcube_message.h"
 
 #include <unistd.h>
 #include <netinet/in.h>

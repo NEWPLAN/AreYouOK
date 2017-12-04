@@ -1,4 +1,4 @@
-#include "Message.h"
+#include "bcube_message.h"
 #include <assert.h>
 #include <cstring>
 
@@ -9,7 +9,7 @@ int TYPE_SIZE[] = { 1, 4, 8, 4, 8 };
 
 
 
-#include "Bcube.h"
+#include "bcube_comm.h"
 //static void show_msg(void* row_data)
 //{
 //	msg_struct* msg = (msg_struct*)row_data;

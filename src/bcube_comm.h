@@ -52,7 +52,7 @@ struct bcube_struct
 	std::vector<step> nodes_send_strategy;/*全部的发送步骤*/
 	std::vector<process> my_strategy;/*当前节点的发送策略*/
 };
-#include "Message.h"
+#include "bcube_message.h"
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
 void bcube_test(void);

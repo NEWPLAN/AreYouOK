@@ -3,9 +3,8 @@ WARNING=  -Wall
 CFLAGS += $(WARNING) -g  -std=c++11 -Os
 LDFLAGS += -lm  -pthread
 PROC_NAME += proc
-#OBJS_DEPEND += Switch.o Server.o Link.o Parameter.o BCube.o Utils.o Main.o Message.o
-HEAD_DEPEND += Utils.h Message.h Bcube_ops.h Bcube.h
-SOURCE =  Utils.cpp Main.cpp Message.cpp Bcube_ops.cpp Bcube.cpp
+HEAD_DEPEND += bcube_comm.h bcube_message.h bcube_ops.h bcube_utils.h
+SOURCE +=  bcube_comm.cpp bcube_message.cpp bcube_ops.cpp bcube_test.cpp bcube_utils.cpp
 OBJS_DEPEND=$(subst .cpp,.o, $(SOURCE))
 all: clean $(PROC_NAME)
 	@echo 'make done'
@@ -23,4 +22,5 @@ run:all
 .PHONY:clean
 clean:  
 	rm -rf $(OBJS_DEPEND) 
-	rm -rf ${PROC_NAME}  
+	rm -rf ${PROC_NAME}
+
