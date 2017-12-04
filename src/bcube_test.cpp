@@ -15,6 +15,5 @@ int main()
 {
 	
 	bcube_ops_test();
-	//bcube_test();
 	return 0;
 }

@@ -209,7 +209,7 @@ static void show_tensor(tensor_table_entry& e,int status=ALLREDUCE)
 	if (e.tensor_ops == ALLREDUCE)
 	{
 		printf("[ ");
-		for (int tensor_index = 0; tensor_index < e.tensor_size; tensor_index++)
+		for (int tensor_index = 0; tensor_index < e.available_nums; tensor_index++)
 			printf("%4d", ((int*)tensor_ptr)[tensor_index]);
 		printf("]\n");
 		if (0)
@@ -341,16 +341,34 @@ void allreduce_enque(bcube_global_struct& bgs, int unique_id,int loops)
 {
 	std::random_device rd;
 	int init_num = rd() % 83;
-	int* a_ = new int[18]();
-	for (int nums = 0; nums < 18; nums++)a_[nums] = init_num++;
 	tensor_table_entry e;
-	e.block_size = 1;
-	e.tensor_name = "_"+std::to_string(loops)+"_allreduce_" + std::to_string(unique_id);
-	e.available_nums = 18;
-	e.tensor_size = 18;
-	e.tensor_data = (void*)a_;
+	e.tensor_name = "_" + std::to_string(loops) + "_allreduce_" + std::to_string(unique_id);
 	e.tensor_type = T_INT32;
 	e.tensor_ops = ALLREDUCE;
+
+	bool padding = true;
+	e.available_nums = loops/100+1;
+
+	int* a_ = new int[e.available_nums]();
+	for (int nums = 0; nums < e.available_nums; nums++)a_[nums] = init_num++;
+
+	if(padding)
+	{/*padding...*/
+		e.block_size = (e.available_nums+17)/18;
+		e.tensor_size = 18 * e.block_size;
+		e.tensor_data = std::malloc(e.tensor_size * sizeof(int));
+		assert(e.tensor_data!=nullptr);
+		std::memcpy(e.tensor_data, (void*)a_, e.available_nums*sizeof(int));
+		std::free(a_);
+	}
+	else
+	{
+		e.block_size = 1;
+		e.available_nums = 18;
+		e.tensor_size = 18;
+		e.tensor_data = (void*)a_;
+	}
+	
 #ifdef _DEBUG_TENSOR_GEN_show_
 	{
 		std::lock_guard<std::mutex> print_tensor(bgs.bcube_mutex);
@@ -373,22 +391,30 @@ void allgather_enqueue(bcube_global_struct& bgs, int unique_id, int loops)
 {
 	std::random_device rd;
 	int init_num = rd() % 83;
-	int* a_ = new int[18]();
-	for (int nums = 0; nums < 18; nums++)a_[nums] = init_num++;
+
+	
 	tensor_table_entry e;
-	e.block_size = 1;
 	e.tensor_name = "_" + std::to_string(loops) + "_allgather_" + std::to_string(unique_id);
+	e.block_size = 1;
 	e.available_nums = 18;
 	e.tensor_size = 18;
+
+	int element_nums = ((bgs.bcube_s.rank)+loops/100)%29;
+	//printf("element_nums = %d\n",element_nums);
+
+	int* a_ = new int[element_nums]();
+	for (int nums = 0; nums < element_nums; nums++)a_[nums] = init_num++;
+
 	e.tensor_data = (void*)a_;
-	e.gather_tensor.resize(e.tensor_size);
+	e.gather_tensor.resize(e.available_nums);
 	{
 		for (auto& it : e.gather_tensor)
 		{
-			it.tensor_shape = e.tensor_size;
-			it.tensor_ptr = (void*)std::malloc(18*sizeof(int));
+			it.tensor_shape = element_nums;
+			it.tensor_ptr = (void*)std::malloc(it.tensor_shape * sizeof(int));
+			assert(it.tensor_ptr!=nullptr);
 			//printf("in allgather_enqueue: malloc %p\n", it.tensor_ptr);
-			std::memcpy(it.tensor_ptr, (void*)a_,18*sizeof(int));
+			std::memcpy(it.tensor_ptr, (void*)a_, it.tensor_shape * sizeof(int));
 		}
 	}
 	e.tensor_type = T_INT32;
@@ -468,6 +494,24 @@ void allreduce_test(bcube_global_struct& bcube_gs)
 		for (auto& thread_id : thread_handle)
 			thread_id.join();
 		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		{
+			int cycle = 0;
+			int receive_size = 0;
+			while (loops > (reduce_loop + 20))
+			{
+				cycle++;
+				int rrr = (int)bcube_gs.receiv_tmp_tensor.size();
+				if (receive_size != rrr)
+				{
+					receive_size = rrr;
+					cycle = 0;
+				}
+				//printf("in %d loops, receiv_tmp_tensor.size() = %d\n", loops, rrr);
+				std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				if ((cycle > 1000) && rrr == receive_size)
+					exit(-1);
+			}
+		}
 		loops++;
 	}
 }
@@ -498,8 +542,8 @@ void allgather_test(bcube_global_struct& bcube_gs)
 				cycle = 0;
 			}
 			//printf("in %d loops, receiv_tmp_tensor.size() = %d\n", loops, rrr);
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-			if ((cycle > 10) && rrr == receive_size)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			if ((cycle > 1000) && rrr == receive_size)
 				exit(-1);
 		}
 		//std::this_thread::sleep_for(std::chrono::seconds(10));
@@ -531,8 +575,8 @@ void bcube_ops_test(void)
 {
 	bcube_all_init_onice(bcube_gs);
 	
-	allreduce_test(bcube_gs);
-	//allgather_test(bcube_gs);
+	//allreduce_test(bcube_gs);
+	allgather_test(bcube_gs);
 	broadcast_test(bcube_gs);
 	
 	return;
