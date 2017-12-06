@@ -5,7 +5,5 @@ with the advantage of Bcube topology.
 
 
 
-
-
 NEWPLAN
 2012.12.6
