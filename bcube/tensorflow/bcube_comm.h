@@ -3,6 +3,8 @@
 
 #include <vector>
 #include <string>
+#include "bcube_message.h"
+
 struct bcube_global_struct;
 struct node
 {
@@ -18,8 +20,8 @@ typedef struct
 {
 	int socket_fd;
 	int node_id;
-	int block_num;/*发送几个block*/
-	int block_size;/*每个block的大小*/
+	int block_num;/*block nums should be send onice*/
+	int block_size;/*each block size*/
 	std::vector<int> paraid;
 }send_to_one;
 
@@ -44,16 +46,16 @@ struct bcube_struct
 	int server_fd;/*server listen fd*/
 	int server_port=9610;/*public port*/
 
-	std::vector<int> recv_fd;/*接收套接字*/
+	std::vector<int> recv_fd;/*recv socket fd*/
 	std::vector<std::vector<node>> topo,neighbor_info;
 
-	node local_info;/*本地的服务端接收套接字,初始化完成后变不再使用*/
+	node local_info;/*local server socket, will be free after initilization*/
 
-	std::vector<step> nodes_send_strategy;/*全部的发送步骤*/
-	std::vector<process> my_strategy;/*当前节点的发送策略*/
+	std::vector<step> nodes_send_strategy;/*global send strategy*/
+	std::vector<process> my_strategy;/*strategy for current rank*/
 };
-#include "bcube_message.h"
+
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
-void bcube_test(void);
+
 #endif

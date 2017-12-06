@@ -514,11 +514,10 @@ static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pi
 	auto& tmp_stg = ps[pid];
 	for (auto it : tmp_stg)
 	{
-		int len = 0, res_len = -1;
+		int len = 0;
 		tensor_msg::encode(a_tensor, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
 		show_msg((void*)tmp_msg);
-		res_len = write(it.socket_fd, (void*)(tmp_msg), len);
-		assert(res_len == len);
+		assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 		std::free(tmp_msg);
 		//printf("in send_assist_thread : free %p\n", tmp_msg);
 		tmp_msg = nullptr;
