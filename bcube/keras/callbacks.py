@@ -2,7 +2,7 @@ import keras
 import keras.backend as K
 import tensorflow as tf
 
-import bcube.tensorflow as hvd
+import bcube.tensorflow as bq
 
 
 class BroadcastGlobalVariablesCallback(keras.callbacks.Callback):
@@ -30,7 +30,7 @@ class BroadcastGlobalVariablesCallback(keras.callbacks.Callback):
 
     def on_train_begin(self, logs=None):
         with tf.device(self.device):
-            bcast_op = hvd.broadcast_global_variables(self.root_rank)
+            bcast_op = bq.broadcast_global_variables(self.root_rank)
             K.get_session().run(bcast_op)
 
 
@@ -62,7 +62,7 @@ class MetricAverageCallback(keras.callbacks.Callback):
         with tf.name_scope('MetricAverageCallback'):
             var = tf.Variable(value, name=metric)
             K.get_session().run(var.initializer)
-            allreduce_op = hvd.allreduce(var, device_dense=self.device)
+            allreduce_op = bq.allreduce(var, device_dense=self.device)
             return var, allreduce_op
 
     def _average_metrics_in_place(self, logs):
@@ -91,7 +91,7 @@ class LearningRateWarmupCallback(keras.callbacks.Callback):
     """
     Implements gradual learning rate warmup:
 
-        `lr = initial_lr / hvd.size()` ---> `lr = initial_lr`
+        `lr = initial_lr / bq.size()` ---> `lr = initial_lr`
 
     This technique was described in the paper "Accurate, Large Minibatch SGD: Training
     ImageNet in 1 Hour". See https://arxiv.org/pdf/1706.02677.pdf for details.
@@ -167,8 +167,8 @@ class LearningRateWarmupCallback(keras.callbacks.Callback):
 
         old_lr = K.get_value(self.model.optimizer.lr)
         epoch = self.current_epoch + float(batch) / self.steps_per_epoch
-        new_lr = self.initial_lr / hvd.size() * \
-            (epoch * (hvd.size() - 1) / self.warmup_epochs + 1)
+        new_lr = self.initial_lr / bq.size() * \
+            (epoch * (bq.size() - 1) / self.warmup_epochs + 1)
         K.set_value(self.model.optimizer.lr, new_lr)
 
         if self.current_epoch == self.warmup_epochs and self.verbose:

@@ -15,7 +15,7 @@
 #!/usr/bin/env python
 
 import tensorflow as tf
-import bcube.tensorflow as hvd
+import bcube.tensorflow as bq
 layers = tf.contrib.layers
 learn = tf.contrib.learn
 
@@ -64,10 +64,10 @@ def conv_model(feature, target, mode):
 
 def main(_):
     # Initialize Bcube.
-    hvd.init()
+    bq.init()
 
     # Download and load MNIST dataset.
-    mnist = learn.datasets.mnist.read_data_sets('MNIST-data-%d' % hvd.rank())
+    mnist = learn.datasets.mnist.read_data_sets('MNIST-data-%d' % bq.rank())
 
     # Build model...
     with tf.name_scope('input'):
@@ -78,7 +78,7 @@ def main(_):
     opt = tf.train.RMSPropOptimizer(0.01)
 
     # Add Bcube Distributed Optimizer.
-    opt = hvd.DistributedOptimizer(opt)
+    opt = bq.DistributedOptimizer(opt)
 
     global_step = tf.contrib.framework.get_or_create_global_step()
     train_op = opt.minimize(loss, global_step=global_step)
@@ -87,7 +87,7 @@ def main(_):
     # to all other processes. This is necessary to ensure consistent initialization
     # of all workers when training is started with random weights or restored
     # from a checkpoint.
-    hooks = [hvd.BroadcastGlobalVariablesHook(0),
+    hooks = [bq.BroadcastGlobalVariablesHook(0),
              tf.train.StopAtStepHook(last_step=100),
              tf.train.LoggingTensorHook(tensors={'step': global_step, 'loss': loss},
                                         every_n_iter=10),
@@ -96,10 +96,10 @@ def main(_):
     # Pin GPU to be used to process local rank (one GPU per process)
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.visible_device_list = str(hvd.local_rank())
+    config.gpu_options.visible_device_list = str(bq.local_rank())
 
     # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
-    checkpoint_dir = './checkpoints' if hvd.rank() == 0 else None
+    checkpoint_dir = './checkpoints' if bq.rank() == 0 else None
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done

@@ -16,7 +16,7 @@ import keras
 import keras.backend as K
 import tensorflow as tf
 
-import bcube.tensorflow as hvd
+import bcube.tensorflow as bq
 from bcube.tensorflow import init
 from bcube.tensorflow import size
 from bcube.tensorflow import rank
@@ -48,12 +48,12 @@ class _DistributedOptimizer(keras.optimizers.Optimizer):
         allreduce the gradients before returning them.
         """
         gradients = super(self.__class__, self).get_gradients(loss, params)
-        if hvd.size() > 1:
+        if bq.size() > 1:
             averaged_gradients = []
             with tf.name_scope(self._name + "_Allreduce"):
                 for grad in gradients:
                     if grad is not None:
-                        avg_grad = hvd.allreduce(grad, device_dense=self._device_dense,
+                        avg_grad = bq.allreduce(grad, device_dense=self._device_dense,
                                                  device_sparse=self._device_sparse)
                         averaged_gradients.append(avg_grad)
                     else:
@@ -94,7 +94,7 @@ def broadcast_global_variables(root_rank):
         root_rank: Rank of the process from which global variables will be broadcasted
                    to all other processes.
     """
-    bcast_op = hvd.broadcast_global_variables(root_rank)
+    bcast_op = bq.broadcast_global_variables(root_rank)
     return K.get_session().run(bcast_op)
 
 
@@ -109,7 +109,7 @@ def allreduce(value, name=None, average=True):
         average: If True, computes the average over all ranks.
                  Otherwise, computes the sum over all ranks.
     """
-    allreduce_op = hvd.allreduce(tf.constant(value, name=name), average=average)
+    allreduce_op = bq.allreduce(tf.constant(value, name=name), average=average)
     return K.get_session().run(allreduce_op)
 
 
@@ -125,7 +125,7 @@ def allgather(value, name=None):
         value: A tensor-compatible value to gather.
         name: Optional name prefix for the constants created by this operation.
     """
-    allgather_op = hvd.allgather(tf.constant(value, name=name))
+    allgather_op = bq.allgather(tf.constant(value, name=name))
     return K.get_session().run(allgather_op)
 
 
@@ -140,5 +140,5 @@ def broadcast(value, root_rank, name=None):
                    broadcasted to all other processes.
         name: Optional name for the constants created by this operation.
     """
-    bcast_op = hvd.broadcast(tf.constant(value, name=name), root_rank)
+    bcast_op = bq.broadcast(tf.constant(value, name=name), root_rank)
     return K.get_session().run(bcast_op)

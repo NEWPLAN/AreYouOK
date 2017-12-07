@@ -7,22 +7,22 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 import math
 import tensorflow as tf
-import bcube.keras as hvd
+import bcube.keras as bq
 
 # Initialize Bcube.
-hvd.init()
+bq.init()
 
 # Pin GPU to be used to process local rank (one GPU per process)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = str(hvd.local_rank())
+config.gpu_options.visible_device_list = str(bq.local_rank())
 K.set_session(tf.Session(config=config))
 
 batch_size = 128
 num_classes = 10
 
 # Adjust number of epochs based on number of GPUs.
-epochs = int(math.ceil(12.0 / hvd.size()))
+epochs = int(math.ceil(12.0 / bq.size()))
 
 # Input image dimensions
 img_rows, img_cols = 28, 28
@@ -64,10 +64,10 @@ model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
 
 # Adjust learning rate based on number of GPUs.
-opt = keras.optimizers.Adadelta(1.0 * hvd.size())
+opt = keras.optimizers.Adadelta(1.0 * bq.size())
 
 # Add Bcube Distributed Optimizer.
-opt = hvd.DistributedOptimizer(opt)
+opt = bq.DistributedOptimizer(opt)
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=opt,
@@ -77,11 +77,11 @@ callbacks = [
     # Broadcast initial variable states from rank 0 to all other processes.
     # This is necessary to ensure consistent initialization of all workers when
     # training is started with random weights or restored from a checkpoint.
-    hvd.callbacks.BroadcastGlobalVariablesCallback(0),
+    bq.callbacks.BroadcastGlobalVariablesCallback(0),
 ]
 
 # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
-if hvd.rank() == 0:
+if bq.rank() == 0:
     callbacks.append(keras.callbacks.ModelCheckpoint('./checkpoint-{epoch}.h5'))
 
 model.fit(x_train, y_train,

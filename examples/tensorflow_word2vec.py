@@ -29,10 +29,10 @@ import numpy as np
 from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
 import tensorflow as tf
-import bcube.tensorflow as hvd
+import bcube.tensorflow as bq
 
 # Initialize Bcube.
-hvd.init()
+bq.init()
 
 
 # Step 1: Download the data.
@@ -52,7 +52,7 @@ def maybe_download(filename, expected_bytes):
             'Failed to verify ' + url + '. Can you get to it with a browser?')
     return filename
 
-filename = maybe_download('text8-%d.zip' % hvd.rank(), 31344016)
+filename = maybe_download('text8-%d.zip' % bq.rank(), 31344016)
 
 
 # Read the data into a list of strings.
@@ -178,7 +178,7 @@ with graph.as_default():
     optimizer = tf.train.GradientDescentOptimizer(1.0)
 
     # Add Bcube Distributed Optimizer.
-    optimizer = hvd.DistributedOptimizer(optimizer)
+    optimizer = bq.DistributedOptimizer(optimizer)
 
     train_op = optimizer.minimize(loss)
 
@@ -196,7 +196,7 @@ with graph.as_default():
     # Broadcast initial variable states from rank 0 to all other processes.
     # This is necessary to ensure consistent initialization of all workers when
     # training is started with random weights or restored from a checkpoint.
-    bcast = hvd.broadcast_global_variables(0)
+    bcast = bq.broadcast_global_variables(0)
 
 # Step 5: Begin training.
 num_steps = 100001
@@ -204,7 +204,7 @@ num_steps = 100001
 # Pin GPU to be used to process local rank (one GPU per process)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.visible_device_list = str(hvd.local_rank())
+config.gpu_options.visible_device_list = str(bq.local_rank())
 
 with tf.Session(graph=graph, config=config) as session:
     # We must initialize all variables before we use them.
