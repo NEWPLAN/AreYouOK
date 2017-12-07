@@ -122,60 +122,111 @@ namespace bcube
 				//return true;
 				if (e.tensor_ops == ALLREDUCE)
 				{
-					if (is_scatter)/*for scatter, sum these tensor*/
+					for (auto it = rcv_tensor.begin(); it != rcv_tensor.end(); it++)
 					{
-
-						/*下面做一次加和操作*/
-						for (auto it = rcv_tensor.begin(); it != rcv_tensor.end(); it++)
+						auto tensor_counts = it->tensor_nums;
+						auto start_position = it->start_position;
+						auto e_tensor_ptr = e.tensor_data;
+						auto type_size = TYPE_SIZE[e.tensor_type];
+						auto block_size = e.block_size;
+						auto dest_tensor_ptr = (char*)e_tensor_ptr + start_position * type_size * block_size;
+						for (size_t addnum = 0; addnum < tensor_counts; addnum++)
 						{
-							auto tensor_ptr = (int*)it->receive_ptr;
-							auto tensor_counts = it->tensor_nums;
-							auto start_position = it->start_position;
-							auto e_tensor_ptr = e.tensor_data;
-							auto type_size = TYPE_SIZE[e.tensor_type];
-							auto block_size = e.block_size;
-							auto add_pos = (int*)((char*)e_tensor_ptr + start_position * type_size * block_size);
-							for (size_t addnum = 0; addnum < tensor_counts; addnum++)
+							switch (e.tensor_type)
 							{
-								//printf("%d,%d,%d\n", add_pos[addnum], tensor_ptr[addnum], add_pos[addnum]+ tensor_ptr[addnum]);
-								add_pos[addnum] += tensor_ptr[addnum];
-
-							}
-							{
-								/*release reources*/
-								std::free(it->receive_ptr);
-								//printf("in allreduce: free %p\n", it->receive_ptr);
-								it->receive_ptr = nullptr;
+								case T_VOID:
+									{
+										perror("error: unknown tensor type(void)\n");
+									}
+									break;
+								case T_BOOL:
+									{
+										perror("error: bool is not ready for scatter and gather\n");
+									}
+									break;
+								case T_UINIT8:
+									{
+										auto add_pos = (uint8_t*)dest_tensor_ptr;
+										auto tensor_ptr = (uint8_t*)(it->receive_ptr);
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_INIT8:
+									{
+										auto add_pos = (int8_t*)dest_tensor_ptr;
+										auto tensor_ptr = (int8_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_UINT16:
+									{
+										auto add_pos = (uint16_t*)dest_tensor_ptr;
+										auto tensor_ptr = (uint16_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_INT16:
+									{
+										auto add_pos = (int16_t*)dest_tensor_ptr;
+										auto tensor_ptr = (int16_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_UINT32:
+									{
+										auto add_pos = (uint32_t*)dest_tensor_ptr;
+										auto tensor_ptr = (uint32_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_INT32:
+									{
+										auto add_pos = (int32_t*)dest_tensor_ptr;
+										auto tensor_ptr = (int32_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_UINT64:
+									{
+										auto add_pos = (uint64_t*)dest_tensor_ptr;
+										auto tensor_ptr = (uint64_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_INT64:
+									{
+										auto add_pos = (int64_t*)dest_tensor_ptr;
+										auto tensor_ptr = (int64_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_FLOAT32:
+									{
+										auto add_pos = (float_t*)dest_tensor_ptr;
+										auto tensor_ptr = (float_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								case T_FLOAT64:
+									{
+										auto add_pos = (double_t*)dest_tensor_ptr;
+										auto tensor_ptr = (double_t*)it->receive_ptr;
+										add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+									}
+									break;
+								default:
+									break;
 							}
 						}
-						return true;
-					}
-					else/*gather, replace these tensor*/
-					{
-						/*下面做一次替换操作*/
-						for (auto it = rcv_tensor.begin(); it != rcv_tensor.end(); it++)
 						{
-							auto tensor_ptr = (int*)it->receive_ptr;
-							auto tensor_counts = it->tensor_nums;
-							auto start_position = it->start_position;
-							auto e_tensor_ptr = e.tensor_data;
-							auto type_size = TYPE_SIZE[e.tensor_type];
-							auto block_size = e.block_size;
-							auto add_pos = (int*)((char*)e_tensor_ptr + start_position * type_size * block_size);
-							for (size_t addnum = 0; addnum < tensor_counts; addnum++)
-							{
-								//printf("%d,%d,%d\n", add_pos[addnum], tensor_ptr[addnum], tensor_ptr[addnum]);
-								add_pos[addnum] = tensor_ptr[addnum];
-							}
-							{
-								/*release reources*/
-								std::free(it->receive_ptr);
-								//printf("in allreduce: free %p\n", it->receive_ptr);
-								it->receive_ptr = nullptr;
-							}
+							/*release reources*/
+							std::free(it->receive_ptr);
+							//printf("in allreduce: free %p\n", it->receive_ptr);
+							it->receive_ptr = nullptr;
 						}
-						return true;
 					}
+					return true;
+
 				}
 				else if (e.tensor_ops == ALLGATHER || e.tensor_ops == BROADCAST)
 				{
@@ -184,14 +235,7 @@ namespace bcube
 						for (size_t index = 0; index < it->gather_ptr.size(); index++)
 						{
 							auto& _a_tensor = e.gather_tensor[it->start_position + index];
-							/*first to do:
-							release the old resource
 							std::free(_a_tensor.tensor_ptr);
-							_a_tensor.tensor_ptr=nullptr;
-							,but now, we will release them last.
-							*/
-							std::free(_a_tensor.tensor_ptr);
-							//printf("in allgather reduce: free %p\n", _a_tensor.tensor_ptr);
 							_a_tensor.tensor_ptr = it->gather_ptr[index].tensor_ptr;
 							_a_tensor.tensor_shape = it->gather_ptr[index].tensor_shape;
 						}
@@ -228,7 +272,74 @@ namespace bcube
 			}
 			static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
 			{
+				//e.callback();
 				printf("%s ", e.tensor_name.c_str());
+			}
+			static void finished_tensor(tensor_table_entry& e)
+			{
+				Status status;
+				switch (e.tensor_ops)
+				{
+					case ALLREDUCE:
+						{
+							/*for cpu*/
+							std::memcpy((void*)(e.output->tensor_data().data()),
+								e.tensor_data,
+								e.available_nums*TYPE_SIZE[e.tensor_type]);
+						}
+						break;
+					case ALLGATHER:
+						{
+							if (1)
+							{
+								TensorShape tensor_shape, single_slice_shape;
+								int64_t dims_without_0 = 0;
+								for (auto& res : e.tensor_shape)
+								{
+									dims_without_0 += res;
+								}
+								for (size_t index = 1; index < e.tensor_shape.size(); index++)
+								{
+									single_slice_shape.AddDim(e.tensor_shape[index]);
+								}
+								tensor_shape.AddDim(dims_without_0);
+								tensor_shape.AppendShape(single_slice_shape);
+
+								status = e.context->allocate_output(0, tensor_shape, &e.output);
+								if (!status.ok())
+								{
+									e.callback(status);
+									return;
+								}
+#if HAVE_CUDA
+								// On GPU allocation is asynchronous, we need to wait for it to complete.
+								auto device_context = e.context->op_device_context();
+								if (device_context != nullptr)
+								{
+									device_context->stream()->BlockHostUntilDone();
+								}
+#endif
+							}
+							char* dst_ptr = (char*)(e.output->tensor_data().data());
+							for (auto& _a_ : e.gather_tensor)
+							{
+								std::memcpy(dst_ptr, _a_.tensor_ptr, _a_.tensor_shape);
+								dst_ptr += _a_.tensor_shape;
+							}
+						}
+						break;
+					case BROADCAST:
+						{
+							std::memcpy((void*)(e.output->tensor_data().data()),
+								e.gather_tensor[0].tensor_ptr,
+								e.gather_tensor[0].tensor_shape);
+						}
+						break;
+					default:
+						break;
+				}
+				release_src(e);
+				e.callback(status);
 			}
 			//void bcube_allreduce(char* src, char* dst, int block_size, int block_num, int block_type)
 			void bcube_do_steps(bcube_global_struct& bgs)
@@ -243,8 +354,10 @@ namespace bcube
 					{
 						if (bcube_reduce(bgs, *it, false))
 						{
-							show_tensor(*it);
-							release_src(*it);
+
+							finished_tensor(*it);
+							/*show_tensor(*it);
+							release_src(*it);*/
 						}
 						else
 						{
@@ -321,35 +434,55 @@ namespace bcube
 			{
 				switch (tf_dtype)
 				{
-				case DT_UINT8:
-					*bcube_dtype = T_UINIT8;
-					return Status::OK();
-				case DT_INT8:
-					*bcube_dtype = T_INIT8;
-					return Status::OK();
-				case DT_UINT16:
-					*bcube_dtype = T_UINT16;
-					return Status::OK();
-				case DT_INT16:
-					*bcube_dtype = T_INT16;
-					return Status::OK();
-				case DT_INT32:
-					*bcube_dtype = T_INT32;
-					return Status::OK();
-				case DT_INT64:
-					*bcube_dtype = T_INT64;
-					return Status::OK();
-				case DT_FLOAT:
-					*bcube_dtype = T_FLOAT32;
-					return Status::OK();
-				case DT_DOUBLE:
-					*bcube_dtype = T_FLOAT64;
-					return Status::OK();
-				case DT_BOOL:
-					*bcube_dtype = T_BOOL;
-					return Status::OK();
-				default:
-					return errors::Internal("Invalid tensor type.");
+					case DT_UINT8:
+						{
+							*bcube_dtype = T_UINIT8;
+							return Status::OK();
+						}
+					case DT_INT8:
+						{
+							*bcube_dtype = T_INIT8;
+							return Status::OK();
+						}
+					case DT_UINT16:
+						{
+							*bcube_dtype = T_UINT16;
+							return Status::OK();
+						}
+					case DT_INT16:
+						{
+							*bcube_dtype = T_INT16;
+							return Status::OK();
+						}
+					case DT_INT32:
+						{
+							*bcube_dtype = T_INT32;
+							return Status::OK();
+						}
+					case DT_INT64:
+						{
+							*bcube_dtype = T_INT64;
+							return Status::OK();
+						}
+					case DT_FLOAT:
+						{
+							*bcube_dtype = T_FLOAT32;
+							return Status::OK();
+						}
+					case DT_DOUBLE:
+						{
+							*bcube_dtype = T_FLOAT64;
+							return Status::OK();
+						}
+					case DT_BOOL:
+						{
+							*bcube_dtype = T_BOOL;
+							return Status::OK();
+						}
+					default:
+						{
+							return errors::Internal("Invalid tensor type.");
+						}
 				}
 			}
 
@@ -368,14 +501,17 @@ namespace bcube
 				}
 
 				std::vector<int64_t> _tensor_shape;
+				std::string _shape2string;
 				for (int i = 0; i < tensor.shape().dims(); i++)
 				{
+					auto tmp_size = tensor.shape().dim_size(i);
 					_tensor_shape.push_back(tensor.shape().dim_size(i));
+					_shape2string += ("_" + std::to_string(tmp_size));
 				}
 
 				tensor_table_entry e;
 
-				e.tensor_name = name;
+				e.tensor_name = _shape2string + "_" + name;
 				e.context = context;
 				e.tensor = tensor;
 				e.output = output;
@@ -420,14 +556,17 @@ namespace bcube
 				}
 
 				std::vector<int64_t> _tensor_shape;
+				std::string _shape2string;
 				for (int i = 0; i < tensor.shape().dims(); i++)
 				{
 					_tensor_shape.push_back(tensor.shape().dim_size(i));
 				}
+				for (size_t ii = 1; ii < _tensor_shape.size(); ii++)
+					_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
 
 				tensor_table_entry e;
 
-				e.tensor_name = name;
+				e.tensor_name = _shape2string + "_" + name;
 				e.context = context;
 				e.tensor = tensor;
 				e.ready_event = ready_event;
@@ -481,6 +620,7 @@ namespace bcube
 				}
 
 				std::vector<int64_t> _tensor_shape;
+				std::string _shape2string;
 				for (int i = 0; i < tensor.shape().dims(); i++)
 				{
 					_tensor_shape.push_back(tensor.shape().dim_size(i));
@@ -488,7 +628,10 @@ namespace bcube
 
 				tensor_table_entry e;
 
-				e.tensor_name = name;
+				/*next part is add shape to distinguish those tensor*/
+				for (size_t ii = 1; ii < _tensor_shape.size(); ii++)
+					_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
+				e.tensor_name = _shape2string + "_" + name;
 				e.context = context;
 				e.tensor = tensor;
 				e.ready_event = ready_event;
@@ -602,49 +745,49 @@ namespace bcube
 			}
 		}//namespace tensorflow
 
-			class BcubeAllreduceOp : public AsyncOpKernel
+		class BcubeAllreduceOp : public AsyncOpKernel
+		{
+		public:
+			explicit BcubeAllreduceOp(OpKernelConstruction* context)
+				: AsyncOpKernel(context) {}
+
+			void ComputeAsync(OpKernelContext* context, DoneCallback done) override
 			{
-			public:
-				explicit BcubeAllreduceOp(OpKernelConstruction* context)
-					: AsyncOpKernel(context) {}
+				OP_REQUIRES_OK(context, CheckInitialized());
 
-				void ComputeAsync(OpKernelContext* context, DoneCallback done) override
+				auto node_name = name();
+				auto device = GetDeviceID(context);
+				auto tensor = context->input(0);
+				Tensor* output;
+				OP_REQUIRES_OK(context,
+					context->allocate_output(0, tensor.shape(), &output));
+				GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
+				bcube_allreduce_queue(context, tensor, output, ready_event, node_name,
+					device, [context, done](const Status & status)
 				{
-					OP_REQUIRES_OK(context, CheckInitialized());
+					context->SetStatus(status);
+					done();
+				});
+			}
+		};
 
-					auto node_name = name();
-					auto device = GetDeviceID(context);
-					auto tensor = context->input(0);
-					Tensor* output;
-					OP_REQUIRES_OK(context,
-						context->allocate_output(0, tensor.shape(), &output));
-					GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
-					bcube_allreduce_queue(context, tensor, output, ready_event, node_name,
-						device, [context, done](const Status & status)
-					{
-						context->SetStatus(status);
-						done();
-					});
-				}
-			};
-
-			REGISTER_KERNEL_BUILDER(Name("BcubeAllreduce").Device(DEVICE_CPU),
-				BcubeAllreduceOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeAllreduce").Device(DEVICE_CPU),
+			BcubeAllreduceOp);
 #if BCUBE_GPU_ALLREDUCE
-			REGISTER_KERNEL_BUILDER(Name("BcubeAllreduce").Device(DEVICE_GPU),
-				BcubeAllreduceOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeAllreduce").Device(DEVICE_GPU),
+			BcubeAllreduceOp);
 #endif
 
-			REGISTER_OP("BcubeAllreduce")
-				.Attr("T: {int32, int64, float32, float64}")
-				.Input("tensor: T")
-				.Output("sum: T")
-				.SetShapeFn([](shape_inference::InferenceContext* c)
-							{
-								c->set_output(0, c->input(0));
-								return Status::OK();
-							})
-				.Doc(R"doc(
+		REGISTER_OP("BcubeAllreduce")
+			.Attr("T: {int32, int64, float32, float64}")
+			.Input("tensor: T")
+			.Output("sum: T")
+			.SetShapeFn([](shape_inference::InferenceContext* c)
+		{
+			c->set_output(0, c->input(0));
+			return Status::OK();
+		})
+			.Doc(R"doc(
 					Perform an Bcube Allreduce on a tensor. All other nodes that do a reduction
 					on a tensor with the same name must have the same dimension for that tensor.
 					Tensors are reduced with other tensors that have the same node name for the
@@ -657,49 +800,49 @@ namespace bcube
 						sum:    A tensor with the same shape as `tensor`, summed across all Bcube nodes.
 					)doc");
 
-			class BcubeAllgatherOp : public AsyncOpKernel 
-			{
-			public:
-				explicit BcubeAllgatherOp(OpKernelConstruction* context): AsyncOpKernel(context) {}
+		class BcubeAllgatherOp : public AsyncOpKernel
+		{
+		public:
+			explicit BcubeAllgatherOp(OpKernelConstruction* context) : AsyncOpKernel(context) {}
 
-				void ComputeAsync(OpKernelContext* context, DoneCallback done) override {
-					OP_REQUIRES_OK(context, CheckInitialized());
+			void ComputeAsync(OpKernelContext* context, DoneCallback done) override {
+				OP_REQUIRES_OK(context, CheckInitialized());
 
-					auto node_name = name();
-					auto device = GetDeviceID(context);
-					auto tensor = context->input(0);
-					// We cannot pre-allocate output for allgather, since shape of result
-					// is only known after all nodes make a notice.
-					GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
-					bcube_allgather_queue(context, tensor, ready_event, node_name, device,
-						[context, done](const Status& status) 
-						{
-							context->SetStatus(status);
-							done();
-						});
-				}
-			}; 
+				auto node_name = name();
+				auto device = GetDeviceID(context);
+				auto tensor = context->input(0);
+				// We cannot pre-allocate output for allgather, since shape of result
+				// is only known after all nodes make a notice.
+				GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
+				bcube_allgather_queue(context, tensor, ready_event, node_name, device,
+					[context, done](const Status& status)
+				{
+					context->SetStatus(status);
+					done();
+				});
+			}
+		};
 
-			REGISTER_KERNEL_BUILDER(Name("BcubeAllgather").Device(DEVICE_CPU),
-				BcubeAllgatherOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeAllgather").Device(DEVICE_CPU),
+			BcubeAllgatherOp);
 #if BCUBE_GPU_ALLGATHER
-			REGISTER_KERNEL_BUILDER(Name("BcubeAllgather").Device(DEVICE_GPU),
-				BcubeAllgatherOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeAllgather").Device(DEVICE_GPU),
+			BcubeAllgatherOp);
 #endif
 
-			REGISTER_OP("BcubeAllgather")
-				.Attr("T: {uint8, int8, uint16, int16, int32, int64, float32, float64, bool}")
-				.Input("tensor: T")
-				.Output("output: T")
-				.SetShapeFn([](shape_inference::InferenceContext* c) 
-							{
-								shape_inference::ShapeHandle output;
-								TF_RETURN_IF_ERROR(
-									c->ReplaceDim(c->input(0), 0, c->UnknownDim(), &output));
-								c->set_output(0, output);
-								return Status::OK();
-							})
-				.Doc(R"doc(
+		REGISTER_OP("BcubeAllgather")
+			.Attr("T: {uint8, int8, uint16, int16, int32, int64, float32, float64, bool}")
+			.Input("tensor: T")
+			.Output("output: T")
+			.SetShapeFn([](shape_inference::InferenceContext* c)
+		{
+			shape_inference::ShapeHandle output;
+			TF_RETURN_IF_ERROR(
+				c->ReplaceDim(c->input(0), 0, c->UnknownDim(), &output));
+			c->set_output(0, output);
+			return Status::OK();
+		})
+			.Doc(R"doc(
 					Perform an Bcube Allgather on a tensor. All other processes that do a gather on a
 					tensor with the same name must have the same rank for that tensor, and have the
 					same dimension on all but the first dimension.
@@ -711,60 +854,54 @@ namespace bcube
 						gathered:    A tensor with the same shape as `tensor` except for the first dimension.
 					)doc");
 
-			class BcubeBroadcastOp : public AsyncOpKernel 
+		class BcubeBroadcastOp : public AsyncOpKernel
+		{
+		public:
+			explicit BcubeBroadcastOp(OpKernelConstruction* context) : AsyncOpKernel(context)
 			{
-			public:
-				explicit BcubeBroadcastOp(OpKernelConstruction* context): AsyncOpKernel(context) 
+				OP_REQUIRES_OK(context, context->GetAttr("root_rank", &root_rank_));
+			}
+
+			void ComputeAsync(OpKernelContext* context, DoneCallback done) override
+			{
+				OP_REQUIRES_OK(context, CheckInitialized());
+
+				auto node_name = name();
+				auto device = GetDeviceID(context);
+				auto tensor = context->input(0);
+				Tensor* output = nullptr;
+
+				OP_REQUIRES_OK(context, context->allocate_output(0, tensor.shape(), &output));
+				GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
+				bcube_broadcast_queue(context, tensor, output, root_rank_, ready_event, node_name, device,
+					[context, done](const Status& status)
 				{
-					OP_REQUIRES_OK(context, context->GetAttr("root_rank", &root_rank_));
-				}
+					context->SetStatus(status);
+					done();
+				});
+			}
 
-				void ComputeAsync(OpKernelContext* context, DoneCallback done) override 
-				{
-					OP_REQUIRES_OK(context, CheckInitialized());
+		private:
+			int root_rank_;
+		};
 
-					auto node_name = name();
-					auto device = GetDeviceID(context);
-					auto tensor = context->input(0);
-					Tensor* output = nullptr;
-					if (bcube_gs.bcube_s.rank == root_rank_) 
-					{
-						context->set_output(0, tensor);
-					}
-					else 
-					{
-						OP_REQUIRES_OK(context, context->allocate_output(0, tensor.shape(), &output));
-					}
-					GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
-					bcube_broadcast_queue(context, tensor, output, root_rank_, ready_event, node_name, device,
-						[context, done](const Status& status) 
-						{
-							context->SetStatus(status);
-							done();
-						});
-				}
-
-			private:
-				int root_rank_;
-			};
-
-			REGISTER_KERNEL_BUILDER(Name("BcubeBroadcast").Device(DEVICE_CPU),
-				BcubeBroadcastOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeBroadcast").Device(DEVICE_CPU),
+			BcubeBroadcastOp);
 #if BCUBE_GPU_BROADCAST
-			REGISTER_KERNEL_BUILDER(Name("BcubeBroadcast").Device(DEVICE_GPU),
-				BcubeBroadcastOp);
+		REGISTER_KERNEL_BUILDER(Name("BcubeBroadcast").Device(DEVICE_GPU),
+			BcubeBroadcastOp);
 #endif
 
-			REGISTER_OP("BcubeBroadcast")
-				.Attr("T: {uint8, int8, uint16, int16, int32, int64, float32, float64, bool}")
-				.Attr("root_rank: int")
-				.Input("tensor: T")
-				.Output("output: T")
-				.SetShapeFn([](shape_inference::InferenceContext* c) {
-				c->set_output(0, c->input(0));
-				return Status::OK();
-			})
-				.Doc(R"doc(
+		REGISTER_OP("BcubeBroadcast")
+			.Attr("T: {uint8, int8, uint16, int16, int32, int64, float32, float64, bool}")
+			.Attr("root_rank: int")
+			.Input("tensor: T")
+			.Output("output: T")
+			.SetShapeFn([](shape_inference::InferenceContext* c) {
+			c->set_output(0, c->input(0));
+			return Status::OK();
+		})
+			.Doc(R"doc(
 					Perform an Bcube Broadcast on a tensor. All other processes that do a broadcast
 					on a tensor with the same name must have the same dimension for that tensor.
 
