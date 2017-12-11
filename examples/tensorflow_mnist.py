@@ -96,7 +96,7 @@ def main(_):
     # Pin GPU to be used to process local rank (one GPU per process)
     config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
-    config.gpu_options.visible_device_list = str(bq.local_rank())
+    #config.gpu_options.visible_device_list = str(bq.local_rank())
 
     # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
     checkpoint_dir = './checkpoints' if bq.rank() == 0 else None
