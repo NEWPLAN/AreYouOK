@@ -1,4 +1,5 @@
-# Copyright 2017 Tsinghua University. All Rights Reserved.
+# ==============================================================================
+# Copyright 2017 NEWPLAN, Tsinghua University. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -294,7 +295,7 @@ setup(name='bcube',
       version=__version__,
       packages=find_packages(),
       description='Distributed training framework for TensorFlow.',
-      author='Tsinghua University.',
+      author='NEWPLAN @ Tsinghua University.',
       long_description=textwrap.dedent('''\
           Bcube is a distributed training framework for TensorFlow. 
           The goal of Bcube is to make distributed Deep Learning

@@ -1,4 +1,4 @@
-/************************************below is belong to tensorflow ************************/
+/*===============================================================================
 // Copyright 2016 The TensorFlow Authors. All Rights Reserved.
 // Modifications copyright (C) 2017 NEWPLAN Tsinghua University.
 //
@@ -53,7 +53,7 @@
 #include <cstring>
 
 using namespace tensorflow;
-
+bcube_global_struct bcube_gs;
 namespace bcube
 {
 	namespace tensorflow
@@ -70,7 +70,7 @@ namespace bcube
 				sizeof(float_t),sizeof(double_t)
 			};
 
-			bcube_global_struct bcube_gs;
+			
 			void bcube_do_steps(bcube_global_struct&);
 			void bg_loops(bcube_global_struct& bgs)
 			{
@@ -265,7 +265,6 @@ namespace bcube
 					}
 				}
 				std::free(e.tensor_data);
-				//printf("in allreduce tensor data: free %p\n", e.tensor_data);
 				e.tensor_data = nullptr;
 
 				return;
@@ -358,6 +357,7 @@ namespace bcube
 							finished_tensor(*it);
 							/*show_tensor(*it);
 							release_src(*it);*/
+							release_src(*it);
 						}
 						else
 						{
@@ -542,8 +542,7 @@ namespace bcube
 
 			// bcube must be initialized and the background thread must be running before this function is called.
 			void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
-				GPU_EVENT_IF_CUDA ready_event,
-				const std::string name, const int device,
+				GPU_EVENT_IF_CUDA ready_event,const std::string name, const int device,
 				StatusCallback callback)
 			{
 
@@ -606,10 +605,8 @@ namespace bcube
 
 			// bcube must be initialized and the background thread must be running before this function is called.
 			void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
-				Tensor* output, int root_rank,
-				GPU_EVENT_IF_CUDA ready_event,
-				const std::string name, const int device,
-				StatusCallback callback)
+				Tensor* output, int root_rank,GPU_EVENT_IF_CUDA ready_event,
+				const std::string name, const int device,StatusCallback callback)
 			{
 				BCUBE_TYPE dtype;
 				Status status = DataTypeToBcubeType(tensor.dtype(), &dtype);
@@ -691,10 +688,7 @@ namespace bcube
 			// Returns -1 if Bcube is not initialized.
 			extern "C" int bcube_tensorflow_rank()
 			{
-				if (!bcube_gs.is_inited_done)
-				{
-					return -1;
-				}
+				if (!bcube_gs.is_inited_done)return -1;
 				return bcube_gs.bcube_s.rank;
 			}
 
@@ -709,10 +703,7 @@ namespace bcube
 			// Returns -1 if Bcube is not initialized.
 			extern "C" int bcube_tensorflow_size()
 			{
-				if (!bcube_gs.is_inited_done)
-				{
-					return -1;
-				}
+				if (!bcube_gs.is_inited_done)return -1;
 				return bcube_gs.bcube_s.bcube_node_count;
 			}
 			int GetDeviceID(OpKernelContext* context)
