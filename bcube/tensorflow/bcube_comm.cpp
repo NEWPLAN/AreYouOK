@@ -56,7 +56,7 @@ static void node_counts(bcube_struct& bcube_s)
 	}
 }
 
-/*确定当前bcube所处的节点和信息*/
+/*set up a node*/
 static void setup_node(bcube_struct& bcube_s)
 {
 	char* __rank__ = getenv("BCUBE_RANK");
@@ -70,7 +70,7 @@ static void setup_node(bcube_struct& bcube_s)
 	for (size_t lev = 0; lev < bcube_s.topo.size(); lev++)/*add myself ip into mynodes*/
 		bcube_s.local_info.myip.push_back(bcube_s.topo[lev][bcube_s.rank].ip);
 
-	/*发现邻居节点，加入到neighbor_info中*/
+	/*gather neighbour info*/
 	for (int lev = 0; lev < bcube_s.bcube_level; lev++)/*each level*/
 	{
 		int * tmp_neigh = new int[bcube_s.bcube0_size - 1];
@@ -86,7 +86,7 @@ static void setup_node(bcube_struct& bcube_s)
 
 }
 
-/*加载所有的网络节点*/
+/*default node info*/
 /*
 192.168.10.XXX
 192.168.11.XXX
@@ -147,6 +147,14 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 	return;
 }
 extern void show_msg(void*);
+struct __my_recv_utils
+{
+		int fd;
+		void* data_ptr;
+		void* current_ptr;
+		int left_len;
+		int total_len;
+};
 void recv_loops(bcube_global_struct& bgs)
 {
 	bcube_struct& bs = bgs.bcube_s;
@@ -174,14 +182,72 @@ void recv_loops(bcube_global_struct& bgs)
 	int fd_num = fd_vect.size();
 	server_establisted = true;
 	msg_struct msg_buf;
-	while (true)
+	
+	std::vector<__my_recv_utils> _recv_vector;
+	for (int fd_index = 0; fd_index < fd_num; fd_index++)
 	{
+		__my_recv_utils _a_recv_entry;
+		_a_recv_entry.fd=fd_vect[fd_index];
+		_a_recv_entry.data_ptr=nullptr;
+		_a_recv_entry.current_ptr=nullptr;
+		_a_recv_entry.left_len=0;
+		_a_recv_entry.total_len=0;
+		_recv_vector.push_back(std::move(_a_recv_entry));
+	}
+	while(true)
+	{
+		for(auto& re : _recv_vector)
+		{
+			if(re.total_len==0)
+			{
+				memset((void*)(&msg_buf), 0, msg_len);
+				if (recv(re.fd, &msg_buf, msg_len, MSG_PEEK) != msg_len)continue;
+
+				if(re.data_ptr==nullptr)
+				{
+					re.data_ptr=(void*)std::malloc(msg_buf.msg_length);
+					if(re.data_ptr==nullptr)
+					{
+						perror("fatal error in malloc ... exit!");
+						exit(0);
+					}
+					re.left_len=msg_buf.msg_length;
+					re.total_len=msg_buf.msg_length;
+					re.current_ptr=re.data_ptr;
+				}
+			}
+			
+			int recv_nums=recv(re.fd, re.current_ptr, re.left_len, 0);
+			if(recv_nums<0)continue;
+			re.current_ptr+=recv_nums;
+			re.left_len-=recv_nums;
+			if(re.left_len<=0)
+			{
+				void* new_msg=re.data_ptr;
+				received_tensor_entry e;
+				show_msg(new_msg);
+				tensor_msg::decode(e, new_msg);
+				insert_to_recv_queue(bgs, e);
+				std::free(new_msg);
+				new_msg=nullptr;
+
+				re.data_ptr=nullptr;
+				re.current_ptr=nullptr;
+				re.left_len=0;
+				re.total_len=0;
+			}
+		}
+	}
+	while (false)
+	{
+		//printf("in recevie loops .................... inited.................\n");
 		for (int fd_index = 0; fd_index < fd_num; fd_index++)
 		{
 			memset((void*)(&msg_buf), 0, msg_len);
 			if (recv(fd_vect[fd_index], &msg_buf, msg_len, MSG_PEEK) != msg_len)continue;
 			else
 			{
+				//printf("----------------------------------------------receive msg..................\n");
 				assert((msg_buf.msg_length >= msg_len) && (msg_buf.data[0] == ','));
 				void* new_msg = (void*)std::malloc(msg_buf.msg_length);
 				assert(new_msg != nullptr);
@@ -193,7 +259,11 @@ void recv_loops(bcube_global_struct& bgs)
 				}
 				else
 				{
-					assert(recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, 0) == msg_buf.msg_length);
+					if(recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, 0) != msg_buf.msg_length)
+					{
+						printf("error in receive message\n" );
+						exit(0);
+					}
 					received_tensor_entry e;
 					show_msg(new_msg);
 					tensor_msg::decode(e, new_msg);
@@ -519,8 +589,11 @@ void show_msg(void* row_data)
 	*data = 0;
 	printf("msg_name: %s\n", name);
 	*data = tmp;
-	for (int ii = 0; ii < 3; ii++)
-		printf("%d ",((int*)data)[ii]);
+	if(0)
+	{
+		for (int ii = 0; ii < 3; ii++)
+			printf("%d ",((int*)data)[ii]);
+	}
 	printf("\n");
 }
 extern void show_msg(void*);
@@ -532,8 +605,21 @@ static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pi
 	{
 		int len = 0;
 		tensor_msg::encode(a_tensor, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
+		//printf("send out: %s,\t send len=%d\n",a_tensor.tensor_name.c_str(),len);
 		show_msg((void*)tmp_msg);
-		assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
+		//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
+		//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
+		size_t numsss=send(it.socket_fd, (void*)(tmp_msg), len, 0);
+		if(numsss!=len)
+		{
+			printf("send error .........................\n");
+			exit(0);
+		}
+		else
+		{
+			//printf("send success .........................\n");
+		}
+		//printf("send out %d: %s,\t send len=%d\n",it.socket_fd,a_tensor.tensor_name.c_str(),len);
 		std::free(tmp_msg);
 		//printf("in send_assist_thread : free %p\n", tmp_msg);
 		tmp_msg = nullptr;
@@ -579,7 +665,7 @@ void* send_thread_2(void* _pid)
 	return NULL;
 }
 
-void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
+void bcube_send2222(tensor_table_entry& e, bcube_struct& bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
@@ -649,23 +735,23 @@ void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 //	/*send out...*/
 //	return;
 //}
-//void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
-//{
-//	auto& send_strategy = bs.my_strategy;
-//	assert((size_t)stage < send_strategy.size());
-//	auto & steps = send_strategy[stage];
-//
-//	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
-//
-//	std::thread p0 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 0);
-//	std::thread p1 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 1);
-//	p0.join();
-//	p1.join();
-//	//printf("%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
-//	//while (stage == 1);
-//	/*send out...*/
-//	return;
-//}
+void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
+{
+	auto& send_strategy = bs.my_strategy;
+	assert((size_t)stage < send_strategy.size());
+	auto & steps = send_strategy[stage];
+
+	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
+	//printf("before send ------:%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
+	std::thread p0 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 0);
+	std::thread p1 = std::thread(send_assist_thread, std::ref(e), std::ref(steps), 1);
+	p0.join();
+	p1.join();
+	//printf("after  send ------:%s in stage %d is send out...\n",e.tensor_name.c_str(), stage);
+	//while (stage == 1);
+	/*send out...*/
+	return;
+}
 
 
 

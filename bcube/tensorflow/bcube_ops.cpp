@@ -114,7 +114,7 @@ namespace bcube
 					std::lock_guard<std::mutex> rece_lock(bgs.bcube_mutex);
 					auto& tensor_receive = bgs.receiv_tensor;
 					auto find_tensor = tensor_receive.find(tensor_name);
-					if (find_tensor == tensor_receive.end())return false;/*没有收到,下一次再取*/
+					if (find_tensor == tensor_receive.end())return false;/*脙禄脫脨脢脮碌陆,脧脗脪禄麓脦脭脵脠隆*/
 					rcv_tensor = std::move(find_tensor->second);
 					tensor_receive.erase(find_tensor);
 				}
@@ -246,6 +246,19 @@ namespace bcube
 
 			void release_src(tensor_table_entry& e)
 			{
+				if(0)
+				{
+					if(e.tensor_name=="_BcubeBroadcast_conv_layer2_Conv_biases_RMSProp_1_003")
+					{
+						printf("_BcubeBroadcast_conv_layer2_Conv_biases_RMSProp_1_003:\n" );
+						auto float_ptr=(float*)(e.gather_tensor[0].tensor_ptr);
+						for(int nums=0;nums<e.gather_tensor[0].tensor_shape;nums++)
+						{
+							printf("%.6f  ", float_ptr[nums]);
+						}
+						printf("\n");
+					}
+				}				
 				std::vector<void*> free_ptr;
 				free_ptr.push_back(e.tensor_data);
 				free_ptr.push_back(nullptr);
@@ -329,16 +342,19 @@ namespace bcube
 						break;
 					case BROADCAST:
 						{
+							static std::atomic_int iiiii(1);
+							printf("%d ------finished_tensor(%ld)------: %-70s, shape : %10d\n",iiiii++,e.output->tensor_data().size(),e.tensor_name.c_str(),e.gather_tensor[0].tensor_shape);
+							//break;
 							std::memcpy((void*)(e.output->tensor_data().data()),
 								e.gather_tensor[0].tensor_ptr,
-								e.gather_tensor[0].tensor_shape);
+								e.output->tensor_data().size());
 						}
 						break;
 					default:
 						break;
 				}
 				release_src(e);
-				e.callback(status);
+				//e.callback(Status::OK());
 			}
 			//void bcube_allreduce(char* src, char* dst, int block_size, int block_num, int block_type)
 			void bcube_do_steps(bcube_global_struct& bgs)
@@ -357,7 +373,7 @@ namespace bcube
 							finished_tensor(*it);
 							/*show_tensor(*it);
 							release_src(*it);*/
-							release_src(*it);
+							//release_src(*it);
 						}
 						else
 						{
@@ -405,6 +421,7 @@ namespace bcube
 					auto& unfin = bgs.unfinished_tensor;
 					for (auto it = tmp_table.begin(); it != tmp_table.end(); it++)
 					{
+						//printf("sendddddd size=%ld\n",tmp_table.size());
 						it->tensor_name += "0";/*add exchange name*/
 						if (it->tensor_ops == ALLREDUCE)
 						{
@@ -515,6 +532,7 @@ namespace bcube
 				e.context = context;
 				e.tensor = tensor;
 				e.output = output;
+				printf("allreduce tensor_name is %s\n",e.tensor_name.c_str());
 				e.ready_event = ready_event;
 				e.device = device;
 				e.callback = callback;
@@ -569,6 +587,7 @@ namespace bcube
 				e.context = context;
 				e.tensor = tensor;
 				e.ready_event = ready_event;
+				printf("allgather tensor_name is %s\n",e.tensor_name.c_str());
 				e.device = device;
 				e.callback = callback;
 				e.tensor_shape = std::move(_tensor_shape);
@@ -634,6 +653,7 @@ namespace bcube
 				e.ready_event = ready_event;
 				e.device = device;
 				e.callback = callback;
+				e.output=output;
 				e.tensor_shape = std::move(_tensor_shape);
 
 				{
@@ -641,10 +661,13 @@ namespace bcube
 					e.available_nums = 18;
 					e.tensor_size = 18;
 					int element_nums = tensor.NumElements();
+					
 					e.tensor_data = nullptr;
 					auto _type_size = TYPE_SIZE[dtype];
 
 					e.gather_tensor.resize(e.available_nums);
+					static std::atomic_int iiiii(1);
+					printf("%2d broadcast tensor_name is %-70s,\telement_nums=%10d, dtype= %d type_size=%d\n",iiiii++,e.tensor_name.c_str(),element_nums,dtype,_type_size);
 					{
 						for (auto& it : e.gather_tensor)
 						{

@@ -249,7 +249,8 @@ def fully_define_extension(build_ext):
 				'bcube/tensorflow/bcube_utils.cpp',
                'bcube/tensorflow/bcube_ops.cpp',
                'bcube/tensorflow/bcube_comm.cpp']
-    COMPILE_FLAGS = ['-std=c++11', '-fPIC', '-O2'] + tf_compile_flags
+    #COMPILE_FLAGS = ['-std=c++11', '-fPIC', '-Os'] + tf_compile_flags
+    COMPILE_FLAGS = ['-std=c++11'] + tf_compile_flags
     LINK_FLAGS = tf_link_flags
     LIBRARY_DIRS = []
     LIBRARIES = []
@@ -282,6 +283,15 @@ def fully_define_extension(build_ext):
     tensorflow_bcube_lib.extra_link_args = LINK_FLAGS
     tensorflow_bcube_lib.library_dirs = LIBRARY_DIRS
     tensorflow_bcube_lib.libraries = LIBRARIES
+
+    print(tensorflow_bcube_lib.define_macros)
+    print(tensorflow_bcube_lib.include_dirs)
+    print(tensorflow_bcube_lib.sources)
+    print(tensorflow_bcube_lib.extra_compile_args)
+    #print(tensorflow_bcube_lib.compile_args)
+    print(tensorflow_bcube_lib.extra_link_args)
+    print(tensorflow_bcube_lib.library_dirs)
+    print(tensorflow_bcube_lib.libraries)
 
 
 # run the customize_compiler

@@ -34,30 +34,40 @@ static  int TYPE_SIZE[] =
 
 
 #include "bcube_comm.h"
-//static void show_msg(void* row_data)
-//{
-//	msg_struct* msg = (msg_struct*)row_data;
-//	printf("msg info:\n");
-//	printf("msg_length: %d\n", msg->msg_length);
-//	printf("name_length: %d\n", msg->name_len);
-//	printf("start position: %d\n", msg->start_pos);
-//	printf("msg.data[0]: %c\n", msg->data[0]);
-//	char* name = (char*)msg + sizeof(msg_struct);
-//	char* data = name + msg->name_len;
-//	char tmp = *data;
-//	*data = 0;
-//	printf("msg_name: %s\n", name);
-//	*data = tmp;
-//	for (int ii = 0; ii < 3; ii++)
-//		printf("%d ", ((int*)data)[ii]);
-//	printf("\n");
-//}
+static void show_msg(void* row_data)
+{
+	return;
+	msg_struct* msg = (msg_struct*)row_data;
+	printf("msg info:\n");
+	printf("msg_length: %d\n", msg->msg_length);
+	printf("name_length: %d\n", msg->name_len);
+	printf("start position: %d\n", msg->start_pos);
+	printf("msg.data[0]: %c\n", msg->data[0]);
+	char* name = (char*)msg + sizeof(msg_struct);
+	char* data = name + msg->name_len;
+	char tmp = *data;
+	*data = 0;
+	printf("msg_name: %s\n", name);
+	*data = tmp;
+	if(0)
+	{
+		for (int ii = 0; ii < 3; ii++)
+			printf("%d ", ((int*)data)[ii]);
+	}
+	printf("\n");
+}
 
 void tensor_msg::decode(received_tensor_entry& e, void* msg)
 {
-	assert(msg != nullptr);
+	//assert(msg != nullptr);
 	msg_struct* msg_tp = (msg_struct*)msg;
-	assert(msg_tp->data[0] == ',');
+	//assert(msg_tp->data[0] == ',');
+	if(msg_tp->data[0] != ',')
+	{
+		printf("receive error...\n");
+		exit(0);
+	}
+	show_msg(msg);
 	char* tensor_name = (char*)((char*)msg + sizeof(msg_struct));
 	char* tensor_data = (char*)(tensor_name + msg_tp->name_len);
 	if (msg_tp->t_ops == ALLREDUCE)
