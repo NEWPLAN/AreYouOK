@@ -114,7 +114,7 @@ namespace bcube
 					std::lock_guard<std::mutex> rece_lock(bgs.bcube_mutex);
 					auto& tensor_receive = bgs.receiv_tensor;
 					auto find_tensor = tensor_receive.find(tensor_name);
-					if (find_tensor == tensor_receive.end())return false;/*Ã»ÓÐÊÕµ½,ÏÂÒ»´ÎÔÙÈ¡*/
+					if (find_tensor == tensor_receive.end())return false;/*not ready, return now*/
 					rcv_tensor = std::move(find_tensor->second);
 					tensor_receive.erase(find_tensor);
 				}
@@ -295,6 +295,8 @@ namespace bcube
 					case ALLREDUCE:
 						{
 							/*for cpu*/
+							static std::atomic_int jjj(1);
+							printf("%d ------finished_tensor(%ld)------: %-70s, shape : %10d\n",jjj++,e.output->tensor_data().size(),e.tensor_name.c_str(),e.gather_tensor[0].tensor_shape);
 							std::memcpy((void*)(e.output->tensor_data().data()),
 								e.tensor_data,
 								e.available_nums*TYPE_SIZE[e.tensor_type]);
@@ -354,7 +356,7 @@ namespace bcube
 						break;
 				}
 				release_src(e);
-				//e.callback(Status::OK());
+				e.callback(Status::OK());
 			}
 			//void bcube_allreduce(char* src, char* dst, int block_size, int block_num, int block_type)
 			void bcube_do_steps(bcube_global_struct& bgs)

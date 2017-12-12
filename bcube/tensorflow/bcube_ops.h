@@ -52,8 +52,8 @@ typedef std::unordered_map<std::string, std::vector<received_tensor_entry>> Rece
 struct bcube_global_struct
 {
 	std::atomic_flag bgthread_start = ATOMIC_FLAG_INIT;
-	std::vector<std::thread> bg_thread;/*两个后台thread,主线程发送,附线程接收数据*/
-	std::vector<step> all_send_strategy;/*发送策略*/
+	std::vector<std::thread> bg_thread;/*two background thread,main thread is for data sending, and a receive loops thread to reaceive data*/
+	std::vector<step> all_send_strategy;/*send strategy*/
 
 	bool is_inited_done = false; /*flag indicating inited done*/
 
@@ -61,7 +61,7 @@ struct bcube_global_struct
 	std::mutex tensor_gene_mutex;/*muthex between tensor gen and fetch*/
 	std::mutex tensor_recv_mutex;/*mutex between tensor receive and reduce*/
 
-	std::queue<tensor_table_entry> tensor_table;/*存放新加进来的tensor_表*/
+	std::queue<tensor_table_entry> tensor_table;/*add new tensor into table*/
 	std::vector<std::vector<tensor_table_entry>> unfinished_tensor;/*2D for different stage tensor.*/
 	Received_tensor receiv_tensor;/*this is storing ready to reduce tensor*/
 	Received_tensor receiv_tmp_tensor;/*first insert into tmp buf, if collected all other, copy to receiv_msg.*/

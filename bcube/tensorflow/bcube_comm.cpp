@@ -238,44 +238,6 @@ void recv_loops(bcube_global_struct& bgs)
 			}
 		}
 	}
-	while (false)
-	{
-		//printf("in recevie loops .................... inited.................\n");
-		for (int fd_index = 0; fd_index < fd_num; fd_index++)
-		{
-			memset((void*)(&msg_buf), 0, msg_len);
-			if (recv(fd_vect[fd_index], &msg_buf, msg_len, MSG_PEEK) != msg_len)continue;
-			else
-			{
-				//printf("----------------------------------------------receive msg..................\n");
-				assert((msg_buf.msg_length >= msg_len) && (msg_buf.data[0] == ','));
-				void* new_msg = (void*)std::malloc(msg_buf.msg_length);
-				assert(new_msg != nullptr);
-				//printf("in receive msg loops: malloc %p\n", new_msg);
-				memset(new_msg, 0, msg_buf.msg_length);
-				if (recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, MSG_PEEK) != msg_buf.msg_length)
-				{
-					;//printf("receive buffer is not ready, continue...\n");
-				}
-				else
-				{
-					if(recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, 0) != msg_buf.msg_length)
-					{
-						printf("error in receive message\n" );
-						exit(0);
-					}
-					received_tensor_entry e;
-					show_msg(new_msg);
-					tensor_msg::decode(e, new_msg);
-					insert_to_recv_queue(bgs, e);
-				}
-				std::free(new_msg);
-				//printf("in receive loops: free %p\n", new_msg);
-				new_msg = nullptr;
-			}
-		}
-	}
-	return;
 }
 
 extern bcube_global_struct bcube_gs;
