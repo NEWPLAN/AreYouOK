@@ -36,7 +36,7 @@ typedef struct
 {
 	int socket_fd;
 	int node_id;
-	int block_num;/*block nums should be send onice*/
+	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
 }send_to_one;

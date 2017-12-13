@@ -79,17 +79,18 @@ namespace bcube
 				bgs.unfinished_tensor.resize(4);
 				bgs.is_inited_done = true;
 				std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
-				while (true)
+				while (!(bgs.shut_down))
 				{
 					bcube_do_steps(bgs);
 				}
+				printf("bcube background loops shut_down\n");
 			}
 
 
 			/*
 			global init, launch a background thread.
 			*/
-			void bcube_all_init_onice(bcube_global_struct& gs)
+			void bcube_all_init_once(bcube_global_struct& gs)
 			{
 				static int print_count = 0;
 				if (!bcube_gs.bgthread_start.test_and_set())
@@ -243,16 +244,17 @@ namespace bcube
 				}
 				return true;
 			}
-
+//#define _show_res__ 111
 			void release_src(tensor_table_entry& e)
 			{
-				if(0)
+				static int loops=0;
+				if(e.tensor_name=="_64_DistributedRMSPropOptimizer_Allreduce/BcubeAllreduce_gradients_conv_layer2_Conv_BiasAdd_grad_tuple_control_dependency_1_00123")
 				{
-					if(e.tensor_name=="_BcubeBroadcast_conv_layer2_Conv_biases_RMSProp_1_003")
+					if(!((loops++)%5))
 					{
-						printf("_BcubeBroadcast_conv_layer2_Conv_biases_RMSProp_1_003:\n" );
-						auto float_ptr=(float*)(e.gather_tensor[0].tensor_ptr);
-						for(int nums=0;nums<e.gather_tensor[0].tensor_shape;nums++)
+						printf("%d\t_64_DistributedRMSPropOptimizer_Allreduce/BcubeAllreduce_gradients_conv_layer2_Conv_BiasAdd_grad_tuple_control_dependency_1_00123:\n",loops);
+						auto float_ptr=(float*)(e.tensor_data);
+						for(int nums=0;nums<e.available_nums;nums++)
 						{
 							printf("%.6f  ", float_ptr[nums]);
 						}
@@ -295,8 +297,11 @@ namespace bcube
 					case ALLREDUCE:
 						{
 							/*for cpu*/
+#if _show_res__
 							static std::atomic_int jjj(1);
-							printf("%d ------finished_tensor(%ld)------: %-70s, shape : %10d\n",jjj++,e.output->tensor_data().size(),e.tensor_name.c_str(),e.gather_tensor[0].tensor_shape);
+							printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, shape : %10d\n",
+								jjj++,e.available_nums,TYPE_SIZE[e.tensor_type],e.output->tensor_data().size(),e.tensor_name.c_str(),e.tensor_size);
+#endif
 							std::memcpy((void*)(e.output->tensor_data().data()),
 								e.tensor_data,
 								e.available_nums*TYPE_SIZE[e.tensor_type]);
@@ -534,7 +539,9 @@ namespace bcube
 				e.context = context;
 				e.tensor = tensor;
 				e.output = output;
+#if _show_res__
 				printf("allreduce tensor_name is %s\n",e.tensor_name.c_str());
+#endif
 				e.ready_event = ready_event;
 				e.device = device;
 				e.callback = callback;
@@ -565,7 +572,8 @@ namespace bcube
 				GPU_EVENT_IF_CUDA ready_event,const std::string name, const int device,
 				StatusCallback callback)
 			{
-
+				printf("should never be here.....\n");
+				std::this_thread::sleep_for(std::chrono::seconds(1000));
 				BCUBE_TYPE dtype;
 				Status status = DataTypeToBcubeType(tensor.dtype(), &dtype);
 				if (!status.ok())
@@ -706,7 +714,7 @@ namespace bcube
 			extern "C" void bcube_tensorflow_init()
 			{
 				auto &bgs = bcube_gs;
-				bcube_all_init_onice(bgs);
+				bcube_all_init_once(bgs);
 			}
 
 			// C interface to get index of current Bcube process.

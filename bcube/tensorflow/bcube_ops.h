@@ -28,6 +28,7 @@
 #include "bcube_message.h"
 #include <unordered_map>
 #include <queue>
+#include <chrono>
 
 #include "tensorflow/core/framework/op.h"
 #include "tensorflow/core/framework/op_kernel.h"
@@ -92,6 +93,7 @@ struct bcube_global_struct
 
 	~bcube_global_struct()
 	{
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 		for (auto& thread_id : bg_thread)
 		{
 			if (thread_id.joinable())

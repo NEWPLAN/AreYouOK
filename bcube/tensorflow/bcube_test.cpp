@@ -100,7 +100,7 @@ void broadcast_test(bcube_global_struct& bcube_gs)
 
 void bcube_ops_test(void)
 {
-	bcube_all_init_onice(bcube_gs);
+	bcube_all_init_once(bcube_gs);
 
 	allreduce_test(bcube_gs);
 	//allgather_test(bcube_gs);

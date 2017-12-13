@@ -194,7 +194,7 @@ void recv_loops(bcube_global_struct& bgs)
 		_a_recv_entry.total_len=0;
 		_recv_vector.push_back(std::move(_a_recv_entry));
 	}
-	while(true)
+	while(!(bgs.shut_down))
 	{
 		for(auto& re : _recv_vector)
 		{
@@ -238,6 +238,7 @@ void recv_loops(bcube_global_struct& bgs)
 			}
 		}
 	}
+	printf("shut_down in receive loops threads\n");
 }
 
 extern bcube_global_struct bcube_gs;
