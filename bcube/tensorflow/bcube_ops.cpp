@@ -112,7 +112,7 @@ namespace bcube
 				auto tensor_name = e.tensor_name;
 				std::vector<received_tensor_entry> rcv_tensor;
 				{
-					std::lock_guard<std::mutex> rece_lock(bgs.bcube_mutex);
+					std::lock_guard<std::mutex> rece_lock(bgs.tensor_recv_mutex);
 					auto& tensor_receive = bgs.receiv_tensor;
 					auto find_tensor = tensor_receive.find(tensor_name);
 					if (find_tensor == tensor_receive.end())return false;/*not ready, return now*/
@@ -247,6 +247,7 @@ namespace bcube
 //#define _show_res__ 111
 			void release_src(tensor_table_entry& e)
 			{
+#if 1
 				static int loops=0;
 				if(e.tensor_name=="_64_DistributedRMSPropOptimizer_Allreduce/BcubeAllreduce_gradients_conv_layer2_Conv_BiasAdd_grad_tuple_control_dependency_1_00123")
 				{
@@ -260,7 +261,8 @@ namespace bcube
 						}
 						printf("\n");
 					}
-				}				
+				}	
+#endif			
 				std::vector<void*> free_ptr;
 				free_ptr.push_back(e.tensor_data);
 				free_ptr.push_back(nullptr);
@@ -416,7 +418,7 @@ namespace bcube
 					int count = 5;
 					std::vector<tensor_table_entry> tmp_table;
 					{
-						std::lock_guard<std::mutex> gene_tensor_lock(bgs.bcube_mutex);
+						std::lock_guard<std::mutex> gene_tensor_lock(bgs.tensor_gene_mutex);
 						auto & undo = bgs.tensor_table;
 						while (!undo.empty() && count)
 						{
@@ -560,7 +562,7 @@ namespace bcube
 				e.tensor_type = dtype;
 				e.tensor_ops = ALLREDUCE;
 				{
-					std::lock_guard<std::mutex> enque_lock(bcube_gs.bcube_mutex);
+					std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 					auto& tensor_table = bcube_gs.tensor_table;
 					tensor_table.push(std::move(e));
 				}
@@ -625,7 +627,7 @@ namespace bcube
 				e.tensor_type = dtype;
 				e.tensor_ops = ALLGATHER;
 				{
-					std::lock_guard<std::mutex> enque_lock(bcube_gs.bcube_mutex);
+					std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 					auto& tensor_table = bcube_gs.tensor_table;
 					tensor_table.push(std::move(e));
 				}
@@ -692,7 +694,7 @@ namespace bcube
 				e.tensor_type = dtype;
 				e.tensor_ops = BROADCAST;
 				{
-					std::lock_guard<std::mutex> enque_lock(bcube_gs.bcube_mutex);
+					std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 					auto& tensor_table = bcube_gs.tensor_table;
 					tensor_table.push(std::move(e));
 				}

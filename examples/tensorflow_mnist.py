@@ -88,7 +88,7 @@ def main(_):
     # of all workers when training is started with random weights or restored
     # from a checkpoint.
     hooks = [bq.BroadcastGlobalVariablesHook(0),
-             tf.train.StopAtStepHook(last_step=100),
+             tf.train.StopAtStepHook(last_step=1000),
              tf.train.LoggingTensorHook(tensors={'step': global_step, 'loss': loss},
                                         every_n_iter=10),
              ]
@@ -111,6 +111,7 @@ def main(_):
             # Run a training step synchronously.
             image_, label_ = mnist.train.next_batch(100)
             mon_sess.run(train_op, feed_dict={image: image_, label: label_})
+
 
 
 if __name__ == "__main__":
