@@ -1,6 +1,6 @@
 /*===============================================================================
 // Copyright 2016 The TensorFlow Authors. All Rights Reserved.
-// Modifications copyright (C) 2017 NEWPLAN Tsinghua University.
+// Modifications copyright (C) 2017, NEWPLAN, Tsinghua University.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.

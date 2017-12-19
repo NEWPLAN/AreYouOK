@@ -20,10 +20,7 @@
 #include <vector>
 #include "bcube_comm.h"
 #include "bcube_ops.h"
-/*
-*socket asy
-* http://blog.csdn.net/bian1029/article/details/72974505
-*/
+
 
 void allreduce_test(bcube_global_struct& bcube_gs)
 {
