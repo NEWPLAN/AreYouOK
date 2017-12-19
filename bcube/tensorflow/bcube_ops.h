@@ -41,9 +41,9 @@
 #include <cuda_runtime.h>
 #endif
 
-typedef char* tensor;
+//typedef char* tensor;
 /*
-*全局结构，包含全部的
+*include all tensor infos
 */
 
 #define CPU_DEVICE_ID -1
