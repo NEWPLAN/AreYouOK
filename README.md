@@ -22,8 +22,8 @@ and each node have two nic, you need specific you ip address before run
 
 if all the request is finished, you can run the example with 
 python examples/tensorflow_mnist.py
+  
 
 
-
-NEWPLAN
+NEWPLAN & steamgjk
 2017.12.6
