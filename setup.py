@@ -27,6 +27,13 @@ from bcube import __version__
 
 tensorflow_bcube_lib = Extension('bcube.tensorflow.bcube_lib', [])
 
+os.environ['BCUBE_GPU_ALLREDUCE']='TCP'
+os.environ['BCUBE_GPU_ALLGATHER']='TCP'
+os.environ['BCUBE_GPU_BROADCAST']='TCP'
+
+print(os.environ.get('BCUBE_GPU_ALLREDUCE'))
+print(os.environ.get('BCUBE_GPU_ALLGATHER'))
+print(os.environ.get('BCUBE_GPU_BROADCAST'))
 
 def check_tf_version():
     try:
@@ -262,9 +269,9 @@ def fully_define_extension(build_ext):
         LIBRARIES += ['cudart']
 
     if have_rdma:
-        MACROS += [('HAVE_rdma', '1')]
-        INCLUDES += nccl_include_dirs
-        LIBRARY_DIRS += nccl_lib_dirs
+        MACROS += [('HAVE_RDMA', '1')]
+        INCLUDES += rdma_include_dirs
+        LIBRARY_DIRS += rdma_lib_dirs
         LIBRARIES += ['rdma']
 
     if gpu_allreduce:

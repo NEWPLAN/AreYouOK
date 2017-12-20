@@ -95,21 +95,47 @@ static void topology_init(bcube_struct& bcube_s)
 {
 	printf("constructing a BCube(%d,%d) topology\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 	node_counts(bcube_s);
-	for (int leve = 0; leve < bcube_s.bcube_level; leve++)
+	
+	FILE* fp=fopen("/var/topo.txt",'r+');
+	if(fp==NULL)
 	{
-		std::string ip_addr = "192.168.";
-		std::string leve_str = std::to_string((leve + 10));
-		std::vector<node> tp;/*each level*/
-		node tmp_node;
-		ip_addr += leve_str + std::string(".");
-
-		for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
+		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
 		{
-			tmp_node.ip = ip_addr + std::to_string(nodenum + 10);
-			tmp_node.node_index = nodenum;
-			tp.push_back(tmp_node);
+			std::string ip_addr = "192.168.";
+			std::string leve_str = std::to_string((leve + 10));
+			std::vector<node> tp;/*each level*/
+			node tmp_node;
+			ip_addr += leve_str + std::string(".");
+
+			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
+			{
+				tmp_node.ip = ip_addr + std::to_string(nodenum + 10);
+				tmp_node.node_index = nodenum;
+				tp.push_back(tmp_node);
+			}
+			bcube_s.topo.push_back(tp);
 		}
-		bcube_s.topo.push_back(tp);
+	}
+	else
+	{
+		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
+		{
+			std::string ip_addr;
+			std::vector<node> tp;/*each level*/
+			node tmp_node;
+			
+			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
+			{
+				char ppp[128]={0};
+				fscanf(fp,"%s",&ppp);
+				ip_addr=ppp;
+				printf("ip: %s\n",ip_addr.c_str());
+				tmp_node.ip = ip_addr;
+				tmp_node.node_index = nodenum;
+				tp.push_back(tmp_node);
+			}
+			bcube_s.topo.push_back(tp);
+		}
 	}
 	printf("BCube(%d,%d) is constructed done!\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 }
