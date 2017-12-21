@@ -738,7 +738,9 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
                            GPU_EVENT_IF_CUDA ready_event, const std::string name, const int device,
                            StatusCallback callback)
 {
+	printf("%s\n", name.c_str());
 	printf("should never be here.....\n");
+	exit(0);
 	std::this_thread::sleep_for(std::chrono::seconds(1000));
 	BCUBE_TYPE dtype;
 	Status status = DataTypeToBcubeType(tensor.dtype(), &dtype);
