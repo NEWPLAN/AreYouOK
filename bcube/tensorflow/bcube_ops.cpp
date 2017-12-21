@@ -64,14 +64,14 @@ namespace
 #if HAVE_CUDA
 inline bool check_cuda(tensor_table_entry& e, std::string op_name, cudaError_t result)
 {
-	printf("In Check Cuda\n");
+	//printf("In Check Cuda\n");
 	if (result != cudaSuccess)
 	{
 //#ifdef __BCUBE_DEBUG__
 		printf("%s failed: error in tensor:%s\n", op_name.c_str(), e.tensor_name.c_str());
 //#endif
 		e.callback(errors::Unknown(op_name, " failed: ", cudaGetErrorString(result)));
-		printf("Check Cuda 7\n");
+		//printf("Check Cuda 7\n");
 		return false;
 	}
 	return true;
@@ -337,7 +337,7 @@ static void finished_tensor(tensor_table_entry& e)
 	case ALLREDUCE:
 	{
 		/*for cpu*/
-#if _show_res__
+#if 1
 		static std::atomic_int jjj(1);
 		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, shape : %10d\n",
 		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.tensor_size);
@@ -656,7 +656,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 
 	std::vector<int64_t> _tensor_shape;
 	std::string _shape2string;
-	printf("Check 1\n");
+	//printf("Check 1\n");
 	for (int i = 0; i < tensor.shape().dims(); i++)
 	{
 		auto tmp_size = tensor.shape().dim_size(i);
@@ -688,11 +688,11 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 #if HAVE_CUDA
 		if (e.device != CPU_DEVICE_ID)/*for gpu*/
 		{
-			printf("Check 2\n");
+			//printf("Check 2\n");
 			cudaStream_t& stream = bcube_gs.streams[e.device];
 			if (stream == nullptr)
 			{
-				printf("Check 4\n");
+				//printf("Check 4\n");
 				auto res = check_cuda(e, "create cuda stream",
 				                      cudaStreamCreate(&stream));
 				if (res = false)
@@ -701,20 +701,20 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 					return;
 				}
 			}
-			printf("Check 3\n");
+			//printf("Check 3\n");
 			while (e.ready_event->PollForStatus() !=
 			        perftools::gputools::Event::Status::kPending)
 			{
 				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 			}
-			printf("Check 5\n");
+			//printf("Check 5\n");
 			check_cuda(e, "memcpy asy from device to host",
 			           cudaMemcpyAsync(e.tensor_data,
 			                           (const void*)tensor.tensor_data().data(),
 			                           _type_size * e.available_nums,
 			                           cudaMemcpyDeviceToHost,
 			                           stream));
-			printf("Check 6\n");
+			//printf("Check 6\n");
 		}
 		else
 #endif
@@ -723,13 +723,13 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	}
 	e.tensor_type = dtype;
 	e.tensor_ops = ALLREDUCE;
-	printf("Check 7\n");
+	//printf("Check 7\n");
 	{
 		std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 		auto& tensor_table = bcube_gs.tensor_table;
 		tensor_table.push(std::move(e));
 	}
-	printf("Check 8\n");
+	//printf("Check 8\n");
 	return;
 }
 
@@ -1010,18 +1010,18 @@ public:
 
 	void ComputeAsync(OpKernelContext* context, DoneCallback done) override
 	{
-		printf("Before ComputeAsync\n");
+		//printf("Before ComputeAsync\n");
 		OP_REQUIRES_OK(context, CheckInitialized());
 
 		auto node_name = name();
 		auto device = GetDeviceID(context);
 		auto tensor = context->input(0);
 		Tensor* output;
-		printf("Before OP_REQUIRES_OK\n");
+		//printf("Before OP_REQUIRES_OK\n");
 		OP_REQUIRES_OK(context,
 		               context->allocate_output(0, tensor.shape(), &output));
 		GPU_EVENT_IF_CUDA ready_event = RecordReadyEvent(context);
-		printf("Before bcube_allreduce_queue\n");
+		//printf("Before bcube_allreduce_queue\n");
 		bcube_allreduce_queue(context, tensor, output, ready_event, node_name,
 		                      device, [context, done](const Status & status)
 		{
