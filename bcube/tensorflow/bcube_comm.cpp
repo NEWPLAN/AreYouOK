@@ -68,7 +68,10 @@ static void setup_node(bcube_struct& bcube_s)
 	}
 	bcube_s.local_info.node_index = bcube_s.rank;
 	for (size_t lev = 0; lev < bcube_s.topo.size(); lev++)/*add myself ip into mynodes*/
+	{
+		std::cout<<"neighbour: "<<bcube_s.topo[lev][bcube_s.rank].ip<<std::endl;
 		bcube_s.local_info.myip.push_back(bcube_s.topo[lev][bcube_s.rank].ip);
+	}
 
 	/*gather neighbour info*/
 	for (int lev = 0; lev < bcube_s.bcube_level; lev++)/*each level*/
@@ -96,7 +99,7 @@ static void topology_init(bcube_struct& bcube_s)
 	printf("constructing a BCube(%d,%d) topology\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 	node_counts(bcube_s);
 	
-	FILE* fp=fopen("/var/topo.txt","r+");
+	FILE* fp=fopen("/var/topo.txt","r");
 	if(fp==NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
