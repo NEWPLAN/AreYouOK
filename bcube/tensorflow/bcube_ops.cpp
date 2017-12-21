@@ -69,7 +69,7 @@ inline bool check_cuda(tensor_table_entry& e, std::string op_name, cudaError_t r
 #ifdef __BCUBE_DEBUG__
 		printf("%s failed: error in tensor:%s\n", op_name.c_str(), e.tensor_name.c_str());
 #endif
-		e.callback(errors::Unknown(op_name, " failed: ", cudaGetErrorString(cuda_result)));
+		e.callback(errors::Unknown(op_name, " failed: ", cudaGetErrorString(result)));
 		return false;
 	}
 	return true;
@@ -343,9 +343,8 @@ static void finished_tensor(tensor_table_entry& e)
 			cudaStream_t& stream = bcube_gs.streams[e.device];
 			if (stream == nullptr)
 			{
-				perror("fatal error in reduce of cuda, as well when we call back.
-				       this should never be here\n");
-				e.callback(errors::Unknown(op_name, " failed: ", "fatal error in reduce of cuda"));
+				perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
+				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 				exit(0);
 			}
 			while (e.ready_event->PollForStatus() !=
@@ -379,9 +378,9 @@ static void finished_tensor(tensor_table_entry& e)
 				single_slice_shape.AddDim(e.tensor_shape[index]);
 				without_0_size += e.tensor_shape[index];
 			}
-			for (auto& res : e.gather_tensor.tensor_shape)
+			for (auto& res : e.gather_tensor)
 			{
-				dims_without_0 += res / without_0_size;
+				dims_without_0 += res.tensor_shape / without_0_size;
 			}
 
 			tensor_shape.AddDim(dims_without_0);
@@ -411,9 +410,8 @@ static void finished_tensor(tensor_table_entry& e)
 				cudaStream_t& stream = bcube_gs.streams[e.device];
 				if (stream == nullptr)
 				{
-					perror("fatal error in reduce of cuda, as well when we call back.
-					       this should never be here\n");
-					e.callback(errors::Unknown(op_name, " failed: ", "fatal error in reduce of cuda"));
+					perror("fatal error in reduce of cuda, as well when we call back. this should never be here\n");
+					e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 					exit(0);
 				}
 				while (e.ready_event->PollForStatus() !=
@@ -446,9 +444,8 @@ static void finished_tensor(tensor_table_entry& e)
 			cudaStream_t& stream = bcube_gs.streams[e.device];
 			if (stream == nullptr)
 			{
-				perror("fatal error in reduce of cuda, as well when we call back.
-				       this should never be here\n");
-				e.callback(errors::Unknown(op_name, " failed: ", "fatal error in reduce of cuda"));
+				perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
+				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 				exit(0);
 			}
 			while (e.ready_event->PollForStatus() !=
@@ -478,7 +475,7 @@ static void finished_tensor(tensor_table_entry& e)
 	if (e.device != CPU_DEVICE_ID)
 	{
 		cudaStream_t& stream = bcube_gs.streams[e.device];
-		if (false == check_cuda( cudaStreamSynchronize(stream)))
+		if (false == check_cuda( e, "cudaStreamSynchronize asy from device to host", cudaStreamSynchronize(stream)))
 			return ;
 	}
 #endif

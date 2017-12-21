@@ -96,7 +96,7 @@ static void topology_init(bcube_struct& bcube_s)
 	printf("constructing a BCube(%d,%d) topology\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 	node_counts(bcube_s);
 	
-	FILE* fp=fopen("/var/topo.txt",'r+');
+	FILE* fp=fopen("/var/topo.txt","r+");
 	if(fp==NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
