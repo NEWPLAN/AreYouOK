@@ -337,7 +337,7 @@ static void finished_tensor(tensor_table_entry& e)
 	case ALLREDUCE:
 	{
 		/*for cpu*/
-#if 1
+#if _show_res__
 		static std::atomic_int jjj(1);
 		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, shape : %10d\n",
 		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.tensor_size);
@@ -480,9 +480,11 @@ static void finished_tensor(tensor_table_entry& e)
 #if HAVE_CUDA
 	if (e.device != CPU_DEVICE_ID)
 	{
+		printf("before synchronous cuda stream\n");
 		cudaStream_t& stream = bcube_gs.streams[e.device];
 		if (false == check_cuda( e, "cudaStreamSynchronize asy from device to host", cudaStreamSynchronize(stream)))
 			return ;
+		printf("after synchronous cuda stream\n");
 	}
 #endif
 	e.callback(Status::OK());
@@ -670,9 +672,9 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	e.context = context;
 	e.tensor = tensor;
 	e.output = output;
-//#//if _show_res__
+#if _show_res__
 	printf("allreduce tensor_name is %s\n", e.tensor_name.c_str());
-//#endif
+#endif
 	e.ready_event = ready_event;
 	e.device = device;
 	e.callback = callback;
