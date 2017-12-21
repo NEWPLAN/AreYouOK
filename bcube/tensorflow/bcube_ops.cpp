@@ -250,7 +250,11 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 				}
 				break;
 				default:
+				{
+					printf("unknown type\n");
+					exit(0);
 					break;
+				}
 				}
 			}
 			{
