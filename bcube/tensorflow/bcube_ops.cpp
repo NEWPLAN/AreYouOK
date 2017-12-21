@@ -1027,11 +1027,11 @@ public:
 		bcube_allreduce_queue(context, tensor, output, ready_event, node_name,
 		                      device, [context, done](const Status & status)
 		{
-			printf("Before set context\n");
+			//printf("Before set context\n");
 			context->SetStatus(status);
-			printf("Before after context\n");
+			//printf("Before after context\n");
 			done();
-			printf(" after done\n");
+			//printf(" after done\n");
 		});
 	}
 };
