@@ -522,14 +522,14 @@ void bcube_do_steps(bcube_global_struct& bgs)
 
 
 		for (auto it = step_it.begin(); it != step_it.end(); it++)
-		{	
-			printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
+		{
+			//printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
 			bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
 			if (is_reduce)
 			{
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
-				
+
 				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
