@@ -337,10 +337,10 @@ static void finished_tensor(tensor_table_entry& e)
 	case ALLREDUCE:
 	{
 		/*for cpu*/
-#if _show_res__
+#if 111
 		static std::atomic_int jjj(1);
-		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, shape : %10d\n",
-		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.tensor_size);
+		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, available_nums : %10d\n",
+		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.available_nums);
 #endif
 
 #if HAVE_CUDA
@@ -454,7 +454,7 @@ static void finished_tensor(tensor_table_entry& e)
 				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 				exit(0);
 			}
-			while (e.ready_event->PollForStatus() !=
+			while (e.ready_event->PollForStatus() ==
 			        perftools::gputools::Event::Status::kPending)
 			{
 				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
