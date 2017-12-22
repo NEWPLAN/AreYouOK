@@ -353,7 +353,7 @@ static void finished_tensor(tensor_table_entry& e)
 				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 				exit(0);
 			}
-			while (e.ready_event->PollForStatus() !=
+			while (e.ready_event->PollForStatus() ==
 			        perftools::gputools::Event::Status::kPending)
 			{
 				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
@@ -703,13 +703,13 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 					return;
 				}
 			}
-			//printf("Check 3\n");
-			while (e.ready_event->PollForStatus() !=
+			printf("enque PollForStatus before\n");
+			while (e.ready_event->PollForStatus() ==
 			        perftools::gputools::Event::Status::kPending)
 			{
 				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 			}
-			//printf("Check 5\n");
+			printf("enque PollForStatus after\n");
 			check_cuda(e, "memcpy asy from device to host",
 			           cudaMemcpyAsync(e.tensor_data,
 			                           (const void*)tensor.tensor_data().data(),
