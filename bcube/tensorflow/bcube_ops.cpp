@@ -337,7 +337,7 @@ static void finished_tensor(tensor_table_entry& e)
 	case ALLREDUCE:
 	{
 		/*for cpu*/
-#if 111
+#if _show_res__
 		static std::atomic_int jjj(1);
 		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, available_nums : %10d\n",
 		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.available_nums);
@@ -420,7 +420,7 @@ static void finished_tensor(tensor_table_entry& e)
 					e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
 					exit(0);
 				}
-				while (e.ready_event->PollForStatus() !=
+				while (e.ready_event->PollForStatus() ==
 				        perftools::gputools::Event::Status::kPending)
 				{
 					std::this_thread::sleep_for(std::chrono::nanoseconds(100));
@@ -480,11 +480,11 @@ static void finished_tensor(tensor_table_entry& e)
 #if HAVE_CUDA
 	if (e.device != CPU_DEVICE_ID)
 	{
-		printf("before synchronous cuda stream\n");
+		//printf("before synchronous cuda stream\n");
 		cudaStream_t& stream = bcube_gs.streams[e.device];
 		if (false == check_cuda( e, "cudaStreamSynchronize asy from device to host", cudaStreamSynchronize(stream)))
 			return ;
-		printf("after synchronous cuda stream\n");
+		//printf("after synchronous cuda stream\n");
 	}
 #endif
 	e.callback(Status::OK());
@@ -703,13 +703,13 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 					return;
 				}
 			}
-			printf("enque PollForStatus before\n");
+			//printf("enque PollForStatus before\n");
 			while (e.ready_event->PollForStatus() ==
 			        perftools::gputools::Event::Status::kPending)
 			{
 				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 			}
-			printf("enque PollForStatus after\n");
+			//printf("enque PollForStatus after\n");
 			check_cuda(e, "memcpy asy from device to host",
 			           cudaMemcpyAsync(e.tensor_data,
 			                           (const void*)tensor.tensor_data().data(),
@@ -798,7 +798,7 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
 						return;
 					}
 				}
-				while (e.ready_event->PollForStatus() !=
+				while (e.ready_event->PollForStatus() ==
 				        perftools::gputools::Event::Status::kPending)
 				{
 					std::this_thread::sleep_for(std::chrono::nanoseconds(100));
@@ -899,7 +899,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 						return;
 					}
 				}
-				while (e.ready_event->PollForStatus() !=
+				while (e.ready_event->PollForStatus() ==
 				        perftools::gputools::Event::Status::kPending)
 				{
 					std::this_thread::sleep_for(std::chrono::nanoseconds(100));
