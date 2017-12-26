@@ -316,6 +316,7 @@ static void server_init(bcube_struct& bs)
 
 static void g_send_thread(int queue_id)
 {
+	printf("g_send_thread\n");
 
 	while (1 == 1)
 	{
@@ -648,6 +649,7 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 	setup_node(bcube_s);
 	server_init(bcube_s);
 	client_init(bcube_s);
+	printf("Client Init Finished\n");
 	get_send_strategy(bcube_s);
 	while (!check_bcube_is_inited_done(bcube_s))
 		std::this_thread::sleep_for(std::chrono::seconds(1));
