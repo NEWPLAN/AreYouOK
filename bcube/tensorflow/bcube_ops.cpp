@@ -515,6 +515,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				//gjk: reset the flag
 				it->process_flag = 0;
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
+
 			}
 			else
 			{
@@ -742,6 +743,8 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 
 	tensor_table_entry e;
 	e.flag_mutex_ptr = new Mutex_SRT();
+	e.process_flag = 0;
+
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
 	e.tensor = tensor;
@@ -836,7 +839,9 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
 		_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
 
 	tensor_table_entry e;
-	e.flag_mutex_ptr = new Mutex_SRT();
+	e.flag_mutex_ptr = new Mutex_SRT(); //gjk: initialization
+	e.process_flag = 0; //gjk: initialization
+
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
 	e.tensor = tensor;
@@ -930,6 +935,8 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 
 	tensor_table_entry e;
 	e.flag_mutex_ptr = new Mutex_SRT();
+	e.process_flag = 0;
+
 	/*next part is add shape to distinguish those tensor*/
 	for (size_t ii = 1; ii < _tensor_shape.size(); ii++)
 		_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
