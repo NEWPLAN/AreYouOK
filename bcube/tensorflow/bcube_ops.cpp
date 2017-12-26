@@ -1002,7 +1002,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 			for (auto& it : e.gather_tensor)
 			{
 				it.tensor_shape = element_nums;
-				printf("checkpoint 2\n");
+				//printf("checkpoint 2\n");
 				it.tensor_ptr = (void*)std::malloc(it.tensor_shape * _type_size);
 				assert(it.tensor_ptr != nullptr);
 				std::memcpy(it.tensor_ptr, (const void*)(e.tensor_data), it.tensor_shape * _type_size);
@@ -1014,7 +1014,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 	{
 		std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 		auto& tensor_table = bcube_gs.tensor_table;
-		printf("checkpoint 3\n");
+		//printf("checkpoint 3\n");
 		tensor_table.push(std::move(e));
 	}
 	return;
