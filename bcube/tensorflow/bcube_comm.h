@@ -18,6 +18,7 @@
 #define __TENSOTFLOW_BCBUE__
 
 #include <vector>
+#include <queue>
 #include <string>
 #include "bcube_message.h"
 
@@ -39,7 +40,7 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
-}send_to_one;
+} send_to_one;
 
 /*
 D1:node index;
@@ -60,18 +61,20 @@ struct bcube_struct
 	int rank;
 
 	int server_fd;/*server listen fd*/
-	int server_port=9610;/*public port*/
+	int server_port = 9610; /*public port*/
 
 	std::vector<int> recv_fd;/*recv socket fd*/
-	std::vector<std::vector<node>> topo,neighbor_info;
+	std::vector<std::vector<node>> topo, neighbor_info;
 
 	node local_info;/*local server socket, will be free after initilization*/
 
 	std::vector<step> nodes_send_strategy;/*global send strategy*/
 	std::vector<process> my_strategy;/*strategy for current rank*/
+
+
 };
 
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
-
+void n_bcube_send(tensor_table_entry& , bcube_struct& , int );
 #endif

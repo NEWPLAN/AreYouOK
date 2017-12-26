@@ -54,6 +54,9 @@ struct bcube_global_struct
 {
 	std::atomic_flag bgthread_start = ATOMIC_FLAG_INIT;
 	std::vector<std::thread> bg_thread;/*two background thread,main thread is for data sending, and a receive loops thread to reaceive data*/
+
+	std::vector<std::thread> send_thread_vec;
+	//gjk: each thread will poll the correaponding queue and send the data
 	std::vector<step> all_send_strategy;/*send strategy*/
 
 	bool is_inited_done = false; /*flag indicating inited done*/
@@ -63,6 +66,13 @@ struct bcube_global_struct
 	std::mutex tensor_recv_mutex;/*mutex between tensor receive and reduce*/
 
 	std::queue<tensor_table_entry> tensor_table;/*add new tensor into table*/
+
+
+	std::vector<std::queue<pair<void*, int> > > send_qus;
+	//gjk:each level has a queue, bg thread will put data into the queue, then corresponding send thread will fetch and send the data
+	std::vector<std::mutex> send_mutexes;
+	//gjk: the send queues should be locked for operation
+
 	std::vector<std::vector<tensor_table_entry>> unfinished_tensor;/*2D for different stage tensor.*/
 	Received_tensor receiv_tensor;/*this is storing ready to reduce tensor*/
 	Received_tensor receiv_tmp_tensor;/*first insert into tmp buf, if collected all other, copy to receiv_msg.*/

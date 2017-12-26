@@ -141,6 +141,7 @@ void bcube_all_init_once(bcube_global_struct& gs)
 	}
 }
 
+
 bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatter)
 {
 	auto tensor_name = e.tensor_name;
@@ -321,7 +322,12 @@ void release_src(tensor_table_entry& e)
 	}
 	std::free(e.tensor_data);
 	e.tensor_data = nullptr;
-
+//gjk: add free the mutex ptr
+	if (e.flag_mutex_ptr != nullptr )
+	{
+		std::free(e.flag_mutex_ptr);
+		e.flag_mutex_ptr = nullptr;
+	}
 	return;
 }
 static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
@@ -494,23 +500,61 @@ void bcube_do_steps(bcube_global_struct& bgs)
 {
 	auto& unfinished_vect = bgs.unfinished_tensor;
 	auto unfin_size = (int)bgs.unfinished_tensor.size();
+	//check for one pass
+	//int finished_flag = 0x3; //gjk: hard code, becasue there are only two send threads
+	int in_sendq_flag = (0x1 << 15); //gjk: if this flag is set, that means the tensor_entry has been put into the corresponding send queue
+	for (int unfin_index = unfin_size - 2; unfin_index >= 0; unfin_index--)
+	{
+		std::vector<tensor_table_entry> tmp_tensor_table;
+		auto& step_it = unfinished_vect[unfin_index];
+		for (auto it = step_it.begin(); it != step_it.end(); it++)
+		{
+			if ( it->process_flag & in_sendq_flag == 0)
+				//gjk: the tensor_entry has been sent successfuly and it can be freed from the send queues
+			{
+				//gjk: reset the flag
+				it->process_flag = 0;
+				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
+			}
+			else
+			{
+				tmp_tensor_table.push_back(std::move(*it));
+			}
+		}
+		step_it = std::move(tmp_tensor_table);
+	}
+
 	{
 		/*last stage*/
 		std::vector<tensor_table_entry> tmp_tensor_table;
 		auto& last_stage_tensor = unfinished_vect[unfin_size - 1];
 		for (auto it = last_stage_tensor.begin(); it != last_stage_tensor.end(); it++)
 		{
-			if (bcube_reduce(bgs, *it, false))
+			if (it->process_flag & in_sendq_flag == in_sendq_flag)
 			{
+				//even after we have called n_bcube_send, we cannot move it to the next step because we donot know
+				//whether the tensor has been successfully sent by the two threads
+				//it will remain in this step until its in_sendq_flag has been eliminated (refer to g_send_thread)
 
-				finished_tensor(*it);
-				/*show_tensor(*it);
-				release_src(*it);*/
-				//release_src(*it);
+				//gjk: the tensor_entry has been put into the send queue and it is under process
+				//so we cannot merge it， just push it back
+				tmp_tensor_table.push_back(std::move(*it));
 			}
 			else
 			{
-				tmp_tensor_table.push_back(std::move(*it));
+				//the item has been freed from send queue, so it can be merged
+				if (bcube_reduce(bgs, *it, false))
+				{
+
+					finished_tensor(*it);
+					/*show_tensor(*it);
+					release_src(*it);*/
+					//release_src(*it);  //??? need it?
+				}
+				else
+				{
+					tmp_tensor_table.push_back(std::move(*it));
+				}
 			}
 		}
 		last_stage_tensor = std::move(tmp_tensor_table);
@@ -521,25 +565,39 @@ void bcube_do_steps(bcube_global_struct& bgs)
 		/*from step3->step2->step1...step0*/
 		std::vector<tensor_table_entry> tmp_tensor_table;
 		auto& step_it = unfinished_vect[unfin_index];
-
-
 		for (auto it = step_it.begin(); it != step_it.end(); it++)
 		{
-			//printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
-			bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
-			if (is_reduce)
-			{
-				/*copy to the next stage*/
-				it->tensor_name += std::to_string(unfin_index + 1);
-
-				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
-				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
-
-			}
-			else
+			if (it->process_flag & in_sendq_flag == in_sendq_flag)
+				//gjk: the tensor_entry has been put into the send queue and it is under process
+				//so we cannot merge it， just push it back
 			{
 				tmp_tensor_table.push_back(std::move(*it));
 			}
+			else
+			{
+				//gjk: the item has been freed from the send queue and it can be merged
+				//printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
+				bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
+				if (is_reduce)
+				{
+					/*copy to the next stage*/
+					it->tensor_name += std::to_string(unfin_index + 1);
+					//bcube_send(*it, bgs.bcube_s, unfin_index + 1);
+					//gjk: bcube_send will be replaced by a new function
+					it->process_flag = in_sendq_flag;
+					//gjk: set the flag,indicating that this item is in the send queue
+					//gjk:the flag will be eliminated in one send thread, which  finishes the  last send operation of this item
+					//refer to g_send_thread
+					n_bcube_send(*it, bgs.bcube_s, unfin_index + 1);
+
+					unfinished_vect[unfin_index + 1].push_back(std::move(*it));
+				}
+				else
+				{
+					tmp_tensor_table.push_back(std::move(*it));
+				}
+			}
+
 		}
 		step_it = std::move(tmp_tensor_table);
 	}
@@ -566,7 +624,18 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				//printf("in allreduce\n");
 				/*send out*/
-				bcube_send((*it), bgs.bcube_s, 0);
+				//bcube_send((*it), bgs.bcube_s, 0);
+
+				//gjk: bcube_send will be replaced by a new function n_bcube_send
+				//but there are also some additional checks to guarantee that the item can be put to the next step
+
+
+				it->process_flag = in_sendq_flag;
+				//gjk: set the flag,indicating that this item is in the send queue
+				//gjk:the flag will be eliminated in one send thread, which  finishes the  last send operation of this item
+				n_bcube_send((*it), bgs.bcube_s, 0);
+
+				//TO DO: Flag should be checked to determine whether it can be moved to the next step
 				/*move to unfinished vector*/
 				unfin[0].push_back(std::move(*it));
 			}
@@ -574,7 +643,12 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*enter a gather stage directly*/
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
-				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+				//bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+				it->process_flag = in_sendq_flag;
+				//gjk: set the flag,indicating that this item is in the send queue
+				//gjk:the flag will be eliminated in one send thread, which  finishes the  last send operation of this item
+				n_bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else
@@ -667,7 +741,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	}
 
 	tensor_table_entry e;
-
+	e.flag_mutex_ptr = new Mutex_SRT();
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
 	e.tensor = tensor;
@@ -762,7 +836,7 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
 		_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
 
 	tensor_table_entry e;
-
+	e.flag_mutex_ptr = new Mutex_SRT();
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
 	e.tensor = tensor;
@@ -855,7 +929,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 	}
 
 	tensor_table_entry e;
-
+	e.flag_mutex_ptr = new Mutex_SRT();
 	/*next part is add shape to distinguish those tensor*/
 	for (size_t ii = 1; ii < _tensor_shape.size(); ii++)
 		_shape2string += ("_" + std::to_string(_tensor_shape[ii]));

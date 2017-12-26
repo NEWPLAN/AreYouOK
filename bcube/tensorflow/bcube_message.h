@@ -97,7 +97,10 @@ typedef struct
 	Tensor_Shape tensor_shape;
 	void* tensor_ptr;
 } Tensor_Info;
-
+typedef struct
+{
+	std::mutex flag_mtx;
+} Mutex_SRT;
 typedef struct
 {
 	std::vector<bool> step;/*use less*/
@@ -108,6 +111,14 @@ typedef struct
 	TENSOR_TYPE tensor_type;/*current tensor type*/
 	std::size_t available_nums;/*available nums, for alignment in reduce.*/
 	std::size_t block_size;/*element number in each block*/
+
+	int process_flag; // gjk: to mark the process state of each send operation
+
+	//std::mutex flag_mtx; //gjk: corresponding mutex for update the flag
+	// mutex is not copyable, but there are some std::move operation in the original version
+	//for compatibility
+	Mutex_SRT* flag_mutex_ptr;
+	int cur_step; // gjk:current step in the process
 
 	void* tensor_data = nullptr; /*store tensor data*/
 	int tensor_size;
@@ -125,6 +136,7 @@ typedef struct
 	std::vector<Tensor_Info> gather_tensor;
 	TENSOR_OPS tensor_ops;/*tensor operation like allreduce,allgather,broadcast...*/
 	std::vector<int64_t> tensor_shape;
+
 } tensor_table_entry;
 
 
