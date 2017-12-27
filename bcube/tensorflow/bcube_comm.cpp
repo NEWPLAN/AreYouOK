@@ -329,8 +329,9 @@ static void g_send_thread(int queue_id)
 			if (!bcube_gs.send_qus[queue_id].empty() )
 			{
 				get_ele = true;
-				printf("bcube_gs Not empty\n");
+
 				pair<void*, int> pitem =  bcube_gs.send_qus[queue_id].front();
+				printf("bcube_gs Not empty  e= %p\n", pitem.first);
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
 				stage = pitem.second;
 				printf("stage = %d\n", stage );
@@ -860,7 +861,12 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			{
 				std::lock_guard<std::mutex> lck(bcube_gs.send_mutexes[pid]);
 				//printf("put into pid %d\n", pid );
-				bcube_gs.send_qus[pid].push(make_pair((void*)(&e), stage));
+				tensor_table_entry* tmp_ptr = &e;
+				printf("tensor_name = %s\n", tmp_ptr->tensor_name.c_str() );
+				printf("e ptr= %p\n", &e );
+				pair<void*, int> pitem = make_pair((void*)(&e), stage);
+				bcube_gs.send_qus[pid].push(pitem);
+				printf("name = %p\n", pitem.first );
 			}
 
 		}

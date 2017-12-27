@@ -128,7 +128,7 @@ encode e to msg. malloc msg memory here.
 void tensor_msg::encode(tensor_table_entry& e, void** msg,
                         int start_pos, int block_nums, int* total_length)
 {
-	printf("encoding  %d  %d\n", e.tensor_ops, BROADCAST );
+	printf("encoding  %d  %d  ptr = %p\n", e.tensor_ops, BROADCAST, &e );
 	if (e.tensor_ops == ALLREDUCE)
 	{
 		int element_nums = e.block_size * block_nums;
