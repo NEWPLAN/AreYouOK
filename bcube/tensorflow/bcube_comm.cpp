@@ -314,6 +314,7 @@ static void server_init(bcube_struct& bs)
 }
 
 
+
 static void g_send_thread(int queue_id)
 {
 	printf("g_send_thread\n");
@@ -370,6 +371,7 @@ static void g_send_thread(int queue_id)
 						{
 							//gjk: this is the last send operation towards this tensor, therefore, the in_sendq_flag should be eliminated
 							a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) & (~(in_sendq_flag));
+							printf("out send qu process_flag = %d\n", a_tensor_ptr->process_flag);
 						}
 					}
 

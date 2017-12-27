@@ -584,6 +584,13 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			else if (it->tensor_ops == BROADCAST || it->tensor_ops == ALLGATHER)
 			{
 				/*enter a gather stage directly*/
+
+				it->process_flag = in_sendq_flag;
+				//gjk: set the flag,indicating that this item is in the send queue
+				//gjk:the flag will be eliminated in one send thread, which  finishes the  last send operation of this item
+				printf("before n_bcube_send\n");
+				//getchar();
+
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
 				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
 				unfin[unfin_size / 2].push_back(std::move(*it));
