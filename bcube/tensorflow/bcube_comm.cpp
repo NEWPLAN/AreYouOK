@@ -187,6 +187,11 @@ struct __my_recv_utils
 };
 void recv_loops(bcube_global_struct& bgs)
 {
+	printf("before recv_loop\n");
+	while (1 == 1)
+	{
+
+	}
 	bcube_struct& bs = bgs.bcube_s;
 	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
 	printf("server is inited done, waiting for %d client connecting....:)\n", client_counts);
