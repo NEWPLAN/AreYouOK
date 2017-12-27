@@ -334,7 +334,7 @@ static void g_send_thread(int queue_id)
 				printf("bcube_gs Not empty  e= %p\n", pitem.first);
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
 				stage = pitem.second;
-				printf("stage = %d\n", stage );
+				//printf("stage = %d\n", stage );
 			}
 		}
 
