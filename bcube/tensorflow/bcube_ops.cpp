@@ -588,7 +588,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				it->process_flag = in_sendq_flag;
 				//gjk: set the flag,indicating that this item is in the send queue
 				//gjk:the flag will be eliminated in one send thread, which  finishes the  last send operation of this item
-				printf("before n_bcube_send\n");
+				printf("before n_bcube_send  name=%s\n", it->tensor_name.c_str() );
 				//getchar();
 
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
