@@ -321,7 +321,12 @@ void release_src(tensor_table_entry& e)
 	}
 	std::free(e.tensor_data);
 	e.tensor_data = nullptr;
-
+//gjk: add free the mutex ptr
+	if (e.flag_mutex_ptr != nullptr )
+	{
+		std::free(e.flag_mutex_ptr);
+		e.flag_mutex_ptr = nullptr;
+	}
 	return;
 }
 static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
@@ -494,6 +499,12 @@ void bcube_do_steps(bcube_global_struct& bgs)
 {
 	auto& unfinished_vect = bgs.unfinished_tensor;
 	auto unfin_size = (int)bgs.unfinished_tensor.size();
+	//check for one pass
+	//int finished_flag = 0x3;
+	//gjk: hard code, becasue there are only two send threads
+	int in_sendq_flag = (0x1 << 15);
+	//gjk: if this flag is set, that means the tensor_entry has been put into the corresponding send queue
+
 	{
 		/*last stage*/
 		std::vector<tensor_table_entry> tmp_tensor_table;
