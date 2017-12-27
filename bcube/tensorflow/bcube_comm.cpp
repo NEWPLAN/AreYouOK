@@ -329,11 +329,14 @@ static void g_send_thread(int queue_id)
 			if (!bcube_gs.send_qus[queue_id].empty() )
 			{
 				get_ele = true;
+				printf("bcube_gs Not empty\n");
 				pair<void*, int> pitem =  bcube_gs.send_qus[queue_id].front();
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
 				stage = pitem.second;
+				printf("stage = %d\n", stage );
 			}
 		}
+
 		if (get_ele)
 		{
 			auto& send_strategy = bcube_gs.bcube_s.my_strategy;
@@ -342,8 +345,9 @@ static void g_send_thread(int queue_id)
 			for (auto it : tmp_stg)
 			{
 				int len = 0;
+				printf("before encode\n");
 				tensor_msg::encode(*a_tensor_ptr, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
-				//printf("send out: %s,\t send len=%d\n",a_tensor.tensor_name.c_str(),len);
+				printf("send out: %s,\t send len=%d\n", a_tensor_ptr->tensor_name.c_str(), len);
 				show_msg((void*)tmp_msg);
 				//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
