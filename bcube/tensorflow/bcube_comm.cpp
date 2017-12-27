@@ -317,7 +317,7 @@ static void server_init(bcube_struct& bs)
 
 static void g_send_thread(int queue_id)
 {
-	printf("g_send_thread\n");
+	printf("g_send_thread queue_id=%d\n", queue_id);
 
 	while (1 == 1)
 	{
@@ -350,11 +350,12 @@ static void g_send_thread(int queue_id)
 				int len = 0;
 				printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
 				tensor_msg::encode(*a_tensor_ptr, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
-				printf("send out: %s,\t send len=%d\n", a_tensor_ptr->tensor_name.c_str(), len);
-				show_msg((void*)tmp_msg);
+				printf("before send out: %s,\t send len=%d  queue_id=%d\n", a_tensor_ptr->tensor_name.c_str(), len, queue_id);
+				//show_msg((void*)tmp_msg);
 				//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
 				size_t numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
+				printf("After send  queue_id=%d\n", queue_id );
 				int finished_flag = 0x3;
 				int in_sendq_flag = (0x1 << 15);
 				if (numsss != len)
@@ -364,7 +365,7 @@ static void g_send_thread(int queue_id)
 				}
 				else
 				{
-					//printf("send success .........................\n");
+					printf("send success ......................... queue_id=%d\n", queue_id);
 					{
 						std::lock_guard<std::mutex> lck(a_tensor_ptr->flag_mutex_ptr->flag_mtx);
 						a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) | (0x1 << queue_id );
