@@ -592,7 +592,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				//getchar();
 
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
-				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+				n_bcube_send((*it), bgs.bcube_s, unfin_size / 2);
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else
