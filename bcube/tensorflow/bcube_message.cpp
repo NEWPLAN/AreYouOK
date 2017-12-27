@@ -196,9 +196,10 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		printf("Encoding check 4  block_nums = %d\n", block_nums);
 		for (int block_index = 0; block_index < block_nums; block_index++)
 		{
-			printf("block_index = %d\n", block_index);
+			printf("block_index = %d start_pos = %d\n", block_index, start_pos);
 			*(shape_position) = e.gather_tensor[start_pos + block_index].tensor_shape;
 			assert(tensor_position < (malloc_ptr + msg_ptr->msg_length));
+			printf("tensor_ptr = %p\n", e.gather_tensor[start_pos + block_index].tensor_ptr );
 			std::memcpy(tensor_position, e.gather_tensor[start_pos + block_index].tensor_ptr,
 			            (*shape_position)*type_size);
 			printf("Encoding check 4.5\n");
