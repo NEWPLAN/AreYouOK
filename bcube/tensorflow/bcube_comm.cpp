@@ -335,6 +335,7 @@ static void g_send_thread(int queue_id)
 				printf("bcube_gs Not empty  e= %p\n", pitem.first);
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
 				stage = pitem.second;
+				bcube_gs.send_qus[queue_id].pop();
 				//printf("stage = %d\n", stage );
 			}
 		}
@@ -381,7 +382,7 @@ static void g_send_thread(int queue_id)
 				std::free(tmp_msg);
 				//printf("in send_assist_thread : free %p\n", tmp_msg);
 				tmp_msg = nullptr;
-				bcube_gs.send_qus[queue_id].pop();
+
 			}
 
 		}
