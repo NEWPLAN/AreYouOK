@@ -1000,7 +1000,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 			else
 #endif
 				std::memcpy(e.tensor_data, (const void*)tensor.tensor_data().data(), alloc_tensor_size);
-			printf("checkpoint 1\n");
+			//printf("checkpoint 1\n");
 			for (auto& it : e.gather_tensor)
 			{
 				it.tensor_shape = element_nums;
