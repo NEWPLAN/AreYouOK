@@ -642,6 +642,7 @@ Status DataTypeToBcubeType(DataType tf_dtype, BCUBE_TYPE* bcube_dtype)
 	}
 }
 
+
 // bcube must be initialized and the background thread must be running before this function is called.
 void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
                            Tensor* output, GPU_EVENT_IF_CUDA ready_event,
@@ -667,6 +668,8 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	}
 
 	tensor_table_entry e;
+	e.flag_mutex_ptr = new Mutex_SRT();
+	e.process_flag = 0;
 
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
@@ -762,6 +765,8 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
 		_shape2string += ("_" + std::to_string(_tensor_shape[ii]));
 
 	tensor_table_entry e;
+	e.flag_mutex_ptr = new Mutex_SRT(); //gjk: initialization
+	e.process_flag = 0; //gjk: initialization
 
 	e.tensor_name = _shape2string + "_" + name;
 	e.context = context;
@@ -855,6 +860,8 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 	}
 
 	tensor_table_entry e;
+	e.flag_mutex_ptr = new Mutex_SRT();
+	e.process_flag = 0;
 
 	/*next part is add shape to distinguish those tensor*/
 	for (size_t ii = 1; ii < _tensor_shape.size(); ii++)
@@ -914,10 +921,11 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 			else
 #endif
 				std::memcpy(e.tensor_data, (const void*)tensor.tensor_data().data(), alloc_tensor_size);
-
+			//printf("checkpoint 1\n");
 			for (auto& it : e.gather_tensor)
 			{
 				it.tensor_shape = element_nums;
+				//printf("checkpoint 2\n");
 				it.tensor_ptr = (void*)std::malloc(it.tensor_shape * _type_size);
 				assert(it.tensor_ptr != nullptr);
 				std::memcpy(it.tensor_ptr, (const void*)(e.tensor_data), it.tensor_shape * _type_size);
@@ -929,6 +937,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 	{
 		std::lock_guard<std::mutex> enque_lock(bcube_gs.tensor_gene_mutex);
 		auto& tensor_table = bcube_gs.tensor_table;
+		//printf("checkpoint 3\n");
 		tensor_table.push(std::move(e));
 	}
 	return;
