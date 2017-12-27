@@ -348,7 +348,7 @@ static void g_send_thread(int queue_id)
 			for (auto it : tmp_stg)
 			{
 				int len = 0;
-				printf("before encode  name=%s\n", a_tensor_ptr->tensor_name.c_str());
+				printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
 				tensor_msg::encode(*a_tensor_ptr, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
 				printf("send out: %s,\t send len=%d\n", a_tensor_ptr->tensor_name.c_str(), len);
 				show_msg((void*)tmp_msg);
