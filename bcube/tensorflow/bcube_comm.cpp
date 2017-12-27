@@ -866,7 +866,7 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 				printf("e ptr= %p\n", &e );
 				pair<void*, int> pitem = make_pair((void*)(&e), stage);
 				bcube_gs.send_qus[pid].push(pitem);
-				printf("name = %s\n", (tensor_table_entry*) (pitem.first)->tensor_name.c_str() );
+				printf("name = %s\n", ((tensor_table_entry*) (pitem.first))->tensor_name.c_str() );
 			}
 
 		}
