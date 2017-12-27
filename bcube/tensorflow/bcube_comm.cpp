@@ -850,10 +850,12 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		//gjk:hard code, actually, in this 3*2 BCube topology, there are only two one-hop neighbours in this level
 		int process_num = bcube_gs.bcube_s.bcube_level;
 		int neighbours_on_one_level = bcube_gs.bcube_s.bcube0_size;
+		printf("process_num = %d\n", process_num );
 		for (int pid = 0; pid < process_num; pid++)
 		{
 			{
 				std::lock_guard<std::mutex> lck(bcube_gs.send_mutexes[pid]);
+				printf("put into pid %d\n", pid );
 				bcube_gs.send_qus[pid].push(make_pair((void*)(&e), stage));
 			}
 
