@@ -855,7 +855,7 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		{
 			{
 				std::lock_guard<std::mutex> lck(bcube_gs.send_mutexes[pid]);
-				printf("put into pid %d\n", pid );
+				//printf("put into pid %d\n", pid );
 				bcube_gs.send_qus[pid].push(make_pair((void*)(&e), stage));
 			}
 

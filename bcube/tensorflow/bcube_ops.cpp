@@ -653,7 +653,9 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				//getchar();
 				n_bcube_send((*it), bgs.bcube_s, unfin_size / 2);
 
+				printf("after n_bcube_send\n");
 				unfin[unfin_size / 2].push_back(std::move(*it));
+				printf("after push into unfin\n");
 			}
 			else
 			{
