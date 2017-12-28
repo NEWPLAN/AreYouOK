@@ -511,7 +511,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 		auto& last_stage_tensor = unfinished_vect[unfin_size - 1];
 		for (auto it = last_stage_tensor.begin(); it != last_stage_tensor.end();)
 		{
-			if (it->process_flag & in_sendq_flag == in_sendq_flag)
+			if ( (it->process_flag & in_sendq_flag) == in_sendq_flag)
 			{
 				// still in send queue, cannot be moved
 				it++;
@@ -544,7 +544,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 
 		for (auto it = step_it.begin(); it != step_it.end();)
 		{
-			if (it->process_flag & in_sendq_flag == in_sendq_flag)
+			if ( (it->process_flag & in_sendq_flag ) == in_sendq_flag)
 			{
 				// still in send queue, cannot be moved
 				it++;

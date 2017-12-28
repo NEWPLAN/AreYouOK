@@ -358,7 +358,7 @@ static void g_send_thread(int queue_id)
 			auto & ps = send_strategy[stage];
 			auto& tmp_stg = ps[queue_id];
 			int d_idx = 0;
-			for (auto it : tmp_stg)
+			for (auto& it : tmp_stg)
 			{
 				int len = 0;
 				printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
@@ -387,14 +387,13 @@ static void g_send_thread(int queue_id)
 						std::lock_guard<std::mutex> lck(a_tensor_ptr->flag_mutex_ptr->flag_mtx);
 						//set the bit
 						int offset = bcube0_sz * queue_id + d_idx;
-						a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) | (0x1 << offset );
+						a_tensor_ptr->process_flag =  ((a_tensor_ptr->process_flag) | (0x1 << offset ));
 
-						if ((a_tensor_ptr->process_flag) & (tensor_completed)  == tensor_completed)
+						if ( ( (a_tensor_ptr->process_flag) & (tensor_completed) )  == tensor_completed)
 						{
-							printf("%d\n", (27 & 15) );
 							//gjk: this is the last send operation towards this tensor, therefore, the in_sendq_flag should be eliminated
 							printf("pp-flag = %d  tenc %d  ccc  %d\n", a_tensor_ptr->process_flag, tensor_completed, (a_tensor_ptr->process_flag) & (tensor_completed)  );
-							a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) & (~(in_sendq_flag));
+							a_tensor_ptr->process_flag = ( (a_tensor_ptr->process_flag) & (~(in_sendq_flag)) );
 							printf("out send qu process_flag = %d\n", a_tensor_ptr->process_flag);
 						}
 					}
@@ -407,7 +406,7 @@ static void g_send_thread(int queue_id)
 				//getchar();
 			}
 
-			while ( (a_tensor_ptr->process_flag) & (tensor_completed) != tensor_completed )
+			while ( ( (a_tensor_ptr->process_flag) & (tensor_completed) ) != tensor_completed )
 			{
 				printf("Waiting .. %d\n", a_tensor_ptr->process_flag );
 				sleep(1);
