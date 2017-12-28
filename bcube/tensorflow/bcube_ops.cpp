@@ -562,7 +562,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 
 				it->process_flag = in_sendq_flag;
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
-				int last_idx = unfin[unfin_size / 2].size() - 1;
+				int last_idx = unfinished_vect[unfin_size / 2].size() - 1;
 				n_bcube_send( unfinished_vect[unfin_index + 1][last_idx] , bgs.bcube_s, unfin_index + 1);
 				unfinished_vect[unfin_index].erase(it);
 
