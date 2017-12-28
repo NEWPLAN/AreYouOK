@@ -402,7 +402,7 @@ static void g_send_thread(int queue_id)
 				//printf("in send_assist_thread : free %p\n", tmp_msg);
 				tmp_msg = nullptr;
 				d_idx++;
-				getchar();
+				//getchar();
 			}
 
 			while ( (a_tensor_ptr->process_flag) & (tensor_completed) != tensor_completed )
@@ -889,7 +889,6 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		//gjk:hard code, actually, in this 3*2 BCube topology, there are only two one-hop neighbours in this level
 		int process_num = bcube_gs.bcube_s.bcube_level;
 		int neighbours_on_one_level = bcube_gs.bcube_s.bcube0_size;
-		printf("process_num = %d\n", process_num );
 		for (int pid = 0; pid < process_num; pid++)
 		{
 			{
@@ -906,8 +905,8 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		}
 	}
 
-
-
+	printf("%s has been put to queue\n", e.tensor_name.c_str() );
+	getchar();
 
 	return;
 }
