@@ -106,7 +106,6 @@ typedef struct
 	std::vector<bool> step;/*use less*/
 	std::vector<int> block_in_step;/*use less*/
 
-
 	std::string tensor_name;/*store tensor name*/
 	TENSOR_TYPE tensor_type;/*current tensor type*/
 	std::size_t available_nums;/*available nums, for alignment in reduce.*/
