@@ -33,7 +33,7 @@ struct node
 
 };
 
-struct
+typedef struct
 {
 	std::mutex send_fd_mtx;
 } FD_MTX;
