@@ -327,7 +327,10 @@ static void server_init(bcube_struct& bs)
 static void g_send_thread(int queue_id)
 {
 	printf("g_send_thread queue_id=%d\n", queue_id);
-
+	int bcube0_sz = bcube_gs.bcube_s.bcube0_size;
+	int tensor_completed = 15; //gjk:hard code 1111
+	int finished_flag = 0x3;
+	int in_sendq_flag = (0x1 << 15);
 	while (1 == 1)
 	{
 		bool get_ele = false;
@@ -354,6 +357,7 @@ static void g_send_thread(int queue_id)
 			auto& send_strategy = bcube_gs.bcube_s.my_strategy;
 			auto & ps = send_strategy[stage];
 			auto& tmp_stg = ps[queue_id];
+			int d_idx = 0;
 			for (auto it : tmp_stg)
 			{
 				int len = 0;
@@ -385,8 +389,7 @@ static void g_send_thread(int queue_id)
 				}
 
 				printf("After send  queue_id=%d\n", queue_id );
-				int finished_flag = 0x3;
-				int in_sendq_flag = (0x1 << 15);
+
 				if (numsss != len)
 				{
 					printf("send error .............numss = %d   len = %d  queue_id=%d  errno %ld\n", numsss, len, queue_id, errno);
@@ -397,22 +400,31 @@ static void g_send_thread(int queue_id)
 					printf("send success ......................... queue_id=%d\n", queue_id);
 					{
 						std::lock_guard<std::mutex> lck(a_tensor_ptr->flag_mutex_ptr->flag_mtx);
-						a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) | (0x1 << queue_id );
-						if ((a_tensor_ptr->process_flag) & (finished_flag)  == finished_flag)
+
+						//set the bit
+						int offset = bcube0_sz * queue_id + d_idx;
+						a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) | (0x1 << offset );
+
+						if ((a_tensor_ptr->process_flag) & (tensor_completed)  == tensor_completed)
 						{
 							//gjk: this is the last send operation towards this tensor, therefore, the in_sendq_flag should be eliminated
 							a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) & (~(in_sendq_flag));
 							printf("out send qu process_flag = %d\n", a_tensor_ptr->process_flag);
 						}
 					}
-
-
 				}
 				//printf("send out %d: %s,\t send len=%d\n",it.socket_fd,a_tensor.tensor_name.c_str(),len);
 				std::free(tmp_msg);
 				//printf("in send_assist_thread : free %p\n", tmp_msg);
 				tmp_msg = nullptr;
+				d_idx++;
 
+			}
+
+			while ( (a_tensor_ptr->process_flag) & (tensor_completed) != tensor_completed )
+			{
+				printf("Waiting .. %d\n", a_tensor_ptr->process_flag );
+				sleep(1);
 			}
 
 		}
@@ -900,11 +912,11 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 				std::lock_guard<std::mutex> lck(bcube_gs.send_mutexes[pid]);
 				//printf("put into pid %d\n", pid );
 				tensor_table_entry* tmp_ptr = &e;
-				printf("tensor_name = %s\n", tmp_ptr->tensor_name.c_str() );
-				printf("e ptr= %p\n", &e );
+				//printf("tensor_name = %s\n", tmp_ptr->tensor_name.c_str() );
+				//printf("e ptr= %p\n", &e );
 				pair<void*, int> pitem = make_pair((void*)(&e), stage);
 				bcube_gs.send_qus[pid].push(pitem);
-				printf("name = %s\n", ((tensor_table_entry*) (pitem.first))->tensor_name.c_str() );
+				//printf("name = %s\n", ((tensor_table_entry*) (pitem.first))->tensor_name.c_str() );
 			}
 
 		}
