@@ -936,7 +936,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 
 		e.gather_tensor.resize(e.available_nums);
 		static std::atomic_int iiiii(1);
-		printf("%2d broadcast tensor_name is %-70s,\telement_nums=%10d, dtype= %d type_size=%d\n", iiiii++, e.tensor_name.c_str(), element_nums, dtype, _type_size);
+		//printf("%2d broadcast tensor_name is %-70s,\telement_nums=%10d, dtype= %d type_size=%d\n", iiiii++, e.tensor_name.c_str(), element_nums, dtype, _type_size);
 		{
 			auto alloc_tensor_size = element_nums * _type_size;
 			e.tensor_data = std::malloc(alloc_tensor_size);

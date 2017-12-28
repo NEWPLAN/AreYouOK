@@ -361,9 +361,9 @@ static void g_send_thread(int queue_id)
 			for (auto& it : tmp_stg)
 			{
 				int len = 0;
-				printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
+				//printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
 				tensor_msg::encode(*a_tensor_ptr, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
-				printf("before send out: %s,\t send len=%d  queue_id=%d\n", a_tensor_ptr->tensor_name.c_str(), len, queue_id);
+				//printf("before send out: %s,\t send len=%d  queue_id=%d\n", a_tensor_ptr->tensor_name.c_str(), len, queue_id);
 				//show_msg((void*)tmp_msg);
 				//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
