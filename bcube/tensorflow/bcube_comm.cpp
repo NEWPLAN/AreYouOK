@@ -391,8 +391,9 @@ static void g_send_thread(int queue_id)
 
 						if ((a_tensor_ptr->process_flag) & (tensor_completed)  == tensor_completed)
 						{
+							printf("%d\n", (27 & 15) );
 							//gjk: this is the last send operation towards this tensor, therefore, the in_sendq_flag should be eliminated
-							printf("pp-flag = %d  tenc %d  ccc\n", a_tensor_ptr->process_flag, tensor_completed, (a_tensor_ptr->process_flag) & (tensor_completed)  );
+							printf("pp-flag = %d  tenc %d  ccc  %d\n", a_tensor_ptr->process_flag, tensor_completed, (a_tensor_ptr->process_flag) & (tensor_completed)  );
 							a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) & (~(in_sendq_flag));
 							printf("out send qu process_flag = %d\n", a_tensor_ptr->process_flag);
 						}
