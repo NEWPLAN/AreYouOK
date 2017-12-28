@@ -573,7 +573,7 @@ static void set_sock_fd(bcube_struct& bs)
 						{
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
 							//gjk: add a fd_mutex
-							each_node.fd_mutex =  new FD_MTX();
+							each_node.fd_mtx =  new FD_MTX();
 						}
 
 					}
