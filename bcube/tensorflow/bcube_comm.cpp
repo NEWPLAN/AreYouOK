@@ -920,5 +920,5 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	{
 		bcube_init(bcube_gs.bcube_s, bcube_gs);
 		std::cout << "bcube init done" << std::endl;
-		while (1);
+		while (1) {};
 	}
