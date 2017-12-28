@@ -532,7 +532,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				//tmp_tensor_table.push_back(std::move(*it));
 			}
 		}
-		last_stage_tensor = std::move(tmp_tensor_table);
+		//last_stage_tensor = std::move(tmp_tensor_table);
 	}
 	for (int unfin_index = unfin_size - 2; unfin_index >= 0; unfin_index--)
 	{
