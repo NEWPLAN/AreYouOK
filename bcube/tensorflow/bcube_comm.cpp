@@ -371,36 +371,20 @@ static void g_send_thread(int queue_id)
 				{
 					std::lock_guard<std::mutex> send_fd_lock(it.fd_mtx->send_fd_mtx);
 					int flags = fcntl(it.socket_fd, F_GETFL, 0); //获取文件的flags值。
-					printf("socket-fd flag =%x  O_NONBLOCK = %x\n", flags, O_NONBLOCK );
-					char* ttt = (char*)((void*)tmp_msg);
-					size_t len_sent = 0;
-					while (numsss < len)
-					{
-						len_sent = send(it.socket_fd, ttt + numsss, len - numsss, 0);
-						if (len_sent < 0)
-						{
-							printf("len_sent = %d  queue =%d  errno = %d\n", len_sent, queue_id, errno);
-							exit(0);
-						}
-						numsss += len_sent;
-
-					}
-					//numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
+					//printf("socket-fd flag =%x  O_NONBLOCK = %x\n", flags, O_NONBLOCK );
+					numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
 				}
-
-				printf("After send  queue_id=%d\n", queue_id );
 
 				if (numsss != len)
 				{
-					printf("send error .............numss = %d   len = %d  queue_id=%d  errno %ld\n", numsss, len, queue_id, errno);
+					printf("send error .. name=%s  numss = %d   len = %d  queue_id=%d  errno %ld\n", a_tensor_ptr->tensor_name.c_str(), numsss, len, queue_id, errno);
 					exit(0);
 				}
 				else
 				{
-					printf("send success ......................... queue_id=%d\n", queue_id);
+					printf("send success .. name=%s queue_id=%d\n", a_tensor_ptr->tensor_name.c_str(), queue_id);
 					{
 						std::lock_guard<std::mutex> lck(a_tensor_ptr->flag_mutex_ptr->flag_mtx);
-
 						//set the bit
 						int offset = bcube0_sz * queue_id + d_idx;
 						a_tensor_ptr->process_flag = (a_tensor_ptr->process_flag) | (0x1 << offset );

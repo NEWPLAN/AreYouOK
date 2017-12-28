@@ -556,8 +556,6 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
-
-
 				//bcube_send(*it, bgs.bcube_s, unfin_index + 1);
 
 				it->process_flag = in_sendq_flag;

@@ -128,7 +128,7 @@ encode e to msg. malloc msg memory here.
 void tensor_msg::encode(tensor_table_entry& e, void** msg,
                         int start_pos, int block_nums, int* total_length)
 {
-	printf("encoding  %d  %d  ptr = %p\n", e.tensor_ops, BROADCAST, &e );
+	//printf("encoding  %d  %d  ptr = %p\n", e.tensor_ops, BROADCAST, &e );
 	if (e.tensor_ops == ALLREDUCE)
 	{
 		int element_nums = e.block_size * block_nums;
@@ -171,12 +171,12 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		int element_nums = 0;
 		for (int block_index = 0; block_index < block_nums; block_index++)
 			element_nums += e.gather_tensor[start_pos + block_index].tensor_shape;
-		printf("Encoding check 1\n");
+		//printf("Encoding check 1\n");
 		auto type_size = TYPE_SIZE[e.tensor_type];
 		auto tensor_size = type_size * element_nums;
 		*total_length = sizeof(msg_struct) + e.tensor_name.length() + tensor_size + block_nums * sizeof(int);
 		auto malloc_ptr = (char*)std::malloc(*total_length);
-		printf("Encoding check 2\n");
+		//printf("Encoding check 2\n");
 		assert(malloc_ptr != nullptr);
 		memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
@@ -187,26 +187,26 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		msg_ptr->start_pos = start_pos;
 		msg_ptr->msg_length = *total_length;
 		msg_ptr->t_ops = e.tensor_ops;
-		printf("Encoding check 3\n");
+		//printf("Encoding check 3\n");
 		char* name_position = (char*)((char*)malloc_ptr + sizeof(msg_struct));
 		char* tensor_position = (char*)(name_position + msg_ptr->name_len);
 		int* shape_position = (int*)(tensor_position + tensor_size);
 
 		std::memcpy(name_position, e.tensor_name.c_str(), msg_ptr->name_len);
-		printf("Encoding check 4  block_nums = %d\n", block_nums);
+		//printf("Encoding check 4  block_nums = %d\n", block_nums);
 		for (int block_index = 0; block_index < block_nums; block_index++)
 		{
-			printf("encoding block_index = %d start_pos = %d\n", block_index, start_pos);
+			//printf("encoding block_index = %d start_pos = %d\n", block_index, start_pos);
 			*(shape_position) = e.gather_tensor[start_pos + block_index].tensor_shape;
 			assert(tensor_position < (malloc_ptr + msg_ptr->msg_length));
-			printf("encoding tensor_position=%p idx=%d tensor_ptr = %p\n", tensor_position, (start_pos + block_index),  e.gather_tensor[start_pos + block_index].tensor_ptr );
+			//printf("encoding tensor_position=%p idx=%d tensor_ptr = %p\n", tensor_position, (start_pos + block_index),  e.gather_tensor[start_pos + block_index].tensor_ptr );
 			std::memcpy(tensor_position, e.gather_tensor[start_pos + block_index].tensor_ptr,
 			            (*shape_position)*type_size);
-			printf("Encoding check 4.5\n");
+			//printf("Encoding check 4.5\n");
 			tensor_position += (*shape_position) * type_size;
 			shape_position++;
 		}
-		printf("Encoding check 5\n");
+		//printf("Encoding check 5\n");
 		*msg = malloc_ptr;
 	}
 	else
