@@ -915,10 +915,10 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		return;
 	}
 
-
-	void bcube_test(void)
-	{
-		bcube_init(bcube_gs.bcube_s, bcube_gs);
-		std::cout << "bcube init done" << std::endl;
-		while (1) {}
-	}
+}
+void bcube_test(void)
+{
+	bcube_init(bcube_gs.bcube_s, bcube_gs);
+	std::cout << "bcube init done" << std::endl;
+	while (1) {}
+}
