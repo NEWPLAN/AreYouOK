@@ -909,8 +909,8 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 
 		}
 
-
-		//getchar();
+		printf("\n\n\n\n\n");
+		getchar();
 
 		return;
 	}
