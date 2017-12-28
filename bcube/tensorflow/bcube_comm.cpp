@@ -362,7 +362,11 @@ static void g_send_thread(int queue_id)
 				//show_msg((void*)tmp_msg);
 				//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
-				size_t numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
+				{
+					std::lock_guard<std::mutex> send_lock(it.fd_mtx->send_fd_mtx);
+					size_t numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
+				}
+
 				printf("After send  queue_id=%d\n", queue_id );
 				int finished_flag = 0x3;
 				int in_sendq_flag = (0x1 << 15);
