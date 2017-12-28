@@ -373,6 +373,11 @@ static void g_send_thread(int queue_id)
 					while (numsss < len)
 					{
 						len_sent = send(it.socket_fd, ttt + numsss, len - numsss, 0);
+						if (len_sent < 0)
+						{
+							printf("len_sent = %d  queue =%d  errno = %d\n", len_sent, queue_id, errno);
+							exit(0);
+						}
 						numsss += len_sent;
 						printf("len_sent = %ld  numsss = %ld len = %d\n", len_sent, numsss, len);
 					}
