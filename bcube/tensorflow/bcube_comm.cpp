@@ -344,7 +344,7 @@ static void g_send_thread(int queue_id)
 				get_ele = true;
 
 				pair<void*, int> pitem =  bcube_gs.send_qus[queue_id].front();
-				printf("bcube_gs Not empty  e= %p\n", pitem.first);
+				printf("bcube_gs Not empty  e= %p  \n", pitem.first);
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
 				stage = pitem.second;
 				bcube_gs.send_qus[queue_id].pop();
@@ -362,7 +362,7 @@ static void g_send_thread(int queue_id)
 			{
 				int len = 0;
 				//
-				//printf("before encode  name=%s  queue_id = %d \n", a_tensor_ptr->tensor_name.c_str(), queue_id);
+				printf("before encode ptr=%p name=%s  op=%d  queue_id = %d \n", a_tensor_ptr,  a_tensor_ptr->tensor_name.c_str(), a_tensor_ptr->tensor_ops, queue_id);
 				tensor_msg::encode(*a_tensor_ptr, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
 				//printf("before send out: %s,\t send len=%d  queue_id=%d\n", a_tensor_ptr->tensor_name.c_str(), len, queue_id);
 				//show_msg((void*)tmp_msg);
