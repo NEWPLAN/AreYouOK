@@ -402,7 +402,7 @@ static void g_send_thread(int queue_id)
 				//printf("in send_assist_thread : free %p\n", tmp_msg);
 				tmp_msg = nullptr;
 				d_idx++;
-
+				getchar();
 			}
 
 			while ( (a_tensor_ptr->process_flag) & (tensor_completed) != tensor_completed )
