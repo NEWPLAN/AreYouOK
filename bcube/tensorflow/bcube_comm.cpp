@@ -383,7 +383,7 @@ static void g_send_thread(int queue_id)
 							exit(0);
 						}
 						numsss += len_sent;
-						printf("len_sent = %ld  numsss = %ld len = %d\n", len_sent, numsss, len);
+
 					}
 					//numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
 				}
