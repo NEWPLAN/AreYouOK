@@ -363,12 +363,20 @@ static void g_send_thread(int queue_id)
 				//show_msg((void*)tmp_msg);
 				//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
-				size_t numsss = -1;
+				size_t numsss = 0;
 				{
 					std::lock_guard<std::mutex> send_fd_lock(it.fd_mtx->send_fd_mtx);
 					int flags = fcntl(it.socket_fd, F_GETFL, 0); //获取文件的flags值。
 					printf("socket-fd flag =%x  O_NONBLOCK = %x\n", flags, O_NONBLOCK );
-					numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
+					char* ttt = (char*)((void*)tmp_msg);
+					size_t len_sent = 0;
+					while (numsss < len)
+					{
+						len_sent = send(it.socket_fd, ttt + numsss, len - numsss, 0);
+						numsss += len_sent;
+						printf("len_sent = %ld  numsss = %ld len = %d\n", len_sent, numsss, len);
+					}
+					//numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
 				}
 
 				printf("After send  queue_id=%d\n", queue_id );
