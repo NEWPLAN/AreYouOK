@@ -368,8 +368,8 @@ static void g_send_thread(int queue_id)
 				int in_sendq_flag = (0x1 << 15);
 				if (numsss != len)
 				{
-					printf("send error .........................\n");
-					//exit(0);
+					printf("send error .........................numss = %d   len = %d\n", numsss, len);
+					exit(0);
 				}
 				else
 				{
@@ -570,7 +570,12 @@ static void set_sock_fd(bcube_struct& bs)
 					for (size_t neigh_index = 0; neigh_index < bs.neighbor_info[lev_index].size(); neigh_index++)
 					{
 						if (each_node.node_id == bs.neighbor_info[lev_index][neigh_index].node_index)
+						{
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
+							//gjk: add a fd_mutex
+							each_node.fd_mutex =  new FD_MTX();
+						}
+
 					}
 				}
 			}
