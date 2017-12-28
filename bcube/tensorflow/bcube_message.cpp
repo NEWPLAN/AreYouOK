@@ -211,7 +211,7 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 	}
 	else
 	{
-		perror("error in unkonwn tensor ops  ptr=%p  op=%d\n", &e, e.tensor_ops);
+		printf("error in unkonwn tensor ops  ptr=%p  op=%d\n", &e, e.tensor_ops);
 	}
 }
 
