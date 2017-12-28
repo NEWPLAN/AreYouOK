@@ -557,7 +557,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
 				//bcube_send(*it, bgs.bcube_s, unfin_index + 1);
-
+				printf("after reduce it=%p  name=%s\n", it, it->tensor_name.c_str() );
 				it->process_flag = in_sendq_flag;
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 				int last_idx = unfinished_vect[unfin_index + 1].size() - 1;

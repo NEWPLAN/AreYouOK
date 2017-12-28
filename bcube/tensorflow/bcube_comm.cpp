@@ -326,7 +326,6 @@ static void server_init(bcube_struct& bs)
 
 static void g_send_thread(int queue_id)
 {
-	printf("g_send_thread queue_id=%d\n", queue_id);
 	int bcube0_sz = bcube_gs.bcube_s.bcube0_size;
 	int tensor_completed = 15; //gjk:hard code 1111
 	int finished_flag = 0x3;
@@ -344,8 +343,9 @@ static void g_send_thread(int queue_id)
 				get_ele = true;
 
 				pair<void*, int> pitem =  bcube_gs.send_qus[queue_id].front();
-				printf("bcube_gs Not empty  e= %p  \n", pitem.first);
+
 				a_tensor_ptr = (tensor_table_entry*)(pitem.first);
+				printf("qu_id %d bcube_gs Not empty  e= %p  op=%d\n", queue_id, pitem.first, a_tensor_ptr->tensor_ops);
 				stage = pitem.second;
 				bcube_gs.send_qus[queue_id].pop();
 				//printf("stage = %d\n", stage );
@@ -411,7 +411,7 @@ static void g_send_thread(int queue_id)
 
 			while ( ( (a_tensor_ptr->process_flag) & (tensor_completed) ) != tensor_completed )
 			{
-				printf("Waiting .. %d\n", a_tensor_ptr->process_flag );
+				printf("Waiting .. qu_id %d  name  %s  op=%d  %d\n", queue_id, a_tensor_ptr->tensor_name.c_str(), a_tensor_ptr->tensor_ops, a_tensor_ptr->process_flag );
 				sleep(1);
 			}
 
@@ -904,21 +904,21 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 				pair<void*, int> pitem = make_pair((void*)(&e), stage);
 				bcube_gs.send_qus[pid].push(pitem);
 				//printf("name = %s\n", ((tensor_table_entry*) (pitem.first))->tensor_name.c_str() );
+				printf("%s (%p)  %d has been put to queue  %d\n", e.tensor_name.c_str(), &e,  e.process_flag, pid );
 			}
 
 		}
+
+
+		//getchar();
+
+		return;
 	}
 
-	printf("%s (%p)  %d has been put to queue\n", e.tensor_name.c_str(), &e,  e.process_flag );
-	//getchar();
 
-	return;
-}
-
-
-void bcube_test(void)
-{
-	bcube_init(bcube_gs.bcube_s, bcube_gs);
-	std::cout << "bcube init done" << std::endl;
-	while (1);
-}
+	void bcube_test(void)
+	{
+		bcube_init(bcube_gs.bcube_s, bcube_gs);
+		std::cout << "bcube init done" << std::endl;
+		while (1);
+	}
