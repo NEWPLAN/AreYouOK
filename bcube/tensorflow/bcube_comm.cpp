@@ -225,11 +225,13 @@ void recv_loops(bcube_global_struct& bgs)
 		_a_recv_entry.total_len = 0;
 		_recv_vector.push_back(std::move(_a_recv_entry));
 	}
+	/*
 	printf("before recv_loop  here we will while pause for debug\n");
 	while (1)
 	{
 
 	}
+	**/
 	while (!(bgs.shut_down))
 	{
 		for (auto& re : _recv_vector)
