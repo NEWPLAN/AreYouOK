@@ -909,7 +909,7 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 		}
 	}
 
-	printf("%s has been put to queue\n", e.tensor_name.c_str() );
+	printf("%s (%p)  %d has been put to queue\n", e.tensor_name.c_str(), &e,  e.process_flag );
 	//getchar();
 
 	return;
