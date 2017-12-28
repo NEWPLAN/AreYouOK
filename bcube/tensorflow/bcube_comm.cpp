@@ -386,8 +386,10 @@ static void g_send_thread(int queue_id)
 					{
 						std::lock_guard<std::mutex> lck(a_tensor_ptr->flag_mutex_ptr->flag_mtx);
 						//set the bit
-						int offset = bcube0_sz * queue_id + d_idx;
+						int offset = (bcube0_sz - 1) * queue_id + d_idx;
+						printf("offset =%d\n", offset);
 						a_tensor_ptr->process_flag =  ((a_tensor_ptr->process_flag) | (0x1 << offset ));
+						printf(" a_tensor_ptr->process_flag = %d \n", a_tensor_ptr->process_flag);
 
 						if ( ( (a_tensor_ptr->process_flag) & (tensor_completed) )  == tensor_completed)
 						{
@@ -907,7 +909,7 @@ void n_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	}
 
 	printf("%s has been put to queue\n", e.tensor_name.c_str() );
-	getchar();
+	//getchar();
 
 	return;
 }
