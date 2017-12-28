@@ -39,6 +39,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include <errno.h>
 
 
 /*flag indicate background thread status.*/
@@ -364,7 +365,9 @@ static void g_send_thread(int queue_id)
 				//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
 				size_t numsss = -1;
 				{
-					std::lock_guard<std::mutex> send_lock(it.fd_mtx->send_fd_mtx);
+					std::lock_guard<std::mutex> send_fd_lock(it.fd_mtx->send_fd_mtx);
+					int flags = fcntl(it.socket_fd, F_GETFL, 0); //获取文件的flags值。
+					printf("socket-fd flag =%x  O_NONBLOCK = %x\n", flags, O_NONBLOCK );
 					numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
 				}
 
@@ -373,7 +376,7 @@ static void g_send_thread(int queue_id)
 				int in_sendq_flag = (0x1 << 15);
 				if (numsss != len)
 				{
-					printf("send error .........................numss = %d   len = %d\n", numsss, len);
+					printf("send error .............numss = %d   len = %d  queue_id=%d  errno %ld\n", numsss, len, queue_id, errno);
 					exit(0);
 				}
 				else
