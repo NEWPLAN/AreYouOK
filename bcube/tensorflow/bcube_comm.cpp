@@ -296,7 +296,7 @@ static void server_init(bcube_struct& bs)
 	while (bind(bs.server_fd, (struct sockaddr*)&sin, sizeof(sin)) < 0)
 	{
 		std::cerr << "server init failed: error in bind socket, will try it again in 2 seconds..." << std::endl;
-		if (init_loops > 10)
+		if (init_loops > 30)
 		{
 			close(bs.server_fd);
 			exit(-1);
