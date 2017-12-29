@@ -446,7 +446,8 @@ static void rdma_server_init(bcube_struct & bs)
 	}
 
 	bcube_gs.bg_thread.push_back(std::thread(rdma_recv_loops, std::ref(bcube_gs)));
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	printf("server inited done...\n");
+	std::this_thread::sleep_for(std::chrono::seconds(10));
 	return;
 }
 static void rdma_client_init(bcube_struct& bs)
