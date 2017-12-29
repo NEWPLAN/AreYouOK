@@ -17,9 +17,12 @@
 #ifndef __TENSOTFLOW_BCBUE__
 #define __TENSOTFLOW_BCBUE__
 
+#define HAVE_RDMA 1
+
 #include <vector>
 #include <string>
 #include "bcube_message.h"
+#include "bcube_rdma.h"
 
 struct bcube_global_struct;
 struct node
@@ -30,6 +33,12 @@ struct node
 	/*below is for server*/
 	std::vector<std::string> myip;
 
+#if HAVE_RDMA
+	struct rdma_cm_id* send_rdma_cm_id;
+	struct rdma_event_channel* send_rdma_event_channel;
+	struct _recv_chain* send_list;
+#endif // HAVE_RDMA
+
 };
 
 typedef struct
@@ -39,6 +48,13 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
+
+#if HAVE_RDMA
+	struct rdma_cm_id* send_rdma_cm_id;
+	struct rdma_event_channel* send_rdma_event_channel;
+	struct _recv_chain* send_list;
+#endif // HAVE_RDMA
+
 }send_to_one;
 
 /*
@@ -69,6 +85,12 @@ struct bcube_struct
 
 	std::vector<step> nodes_send_strategy;/*global send strategy*/
 	std::vector<process> my_strategy;/*strategy for current rank*/
+
+#if HAVE_RDMA
+	struct rdma_event_channel *event_channel;
+	struct rdma_cm_id *listener;
+	std::vector<rdma_cm_id*> recv_rdma_cm_id;
+#endif // HAVE_RDMA
 };
 
 void bcube_init(bcube_struct&, bcube_global_struct&);

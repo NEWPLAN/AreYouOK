@@ -26,5 +26,4 @@ python examples/tensorflow_mnist.py
 
 
 NEWPLAN
-
 2017.12.6
