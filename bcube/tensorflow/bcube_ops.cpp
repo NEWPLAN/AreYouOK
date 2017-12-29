@@ -51,6 +51,7 @@
 #include <string>
 #include <assert.h>
 #include <cstring>
+#include "bcube_rdma.h"
 #define __BCUBE_DEBUG__
 
 using namespace tensorflow;
