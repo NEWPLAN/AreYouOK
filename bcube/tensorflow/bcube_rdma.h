@@ -10,6 +10,7 @@
 #include <thread>
 #include <iostream>
 #include "bcube_message.h"
+#include "bcube_comm.h"
 
 
 void rc_die(const char *reason);
