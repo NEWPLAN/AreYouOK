@@ -14,8 +14,8 @@
 # limitations under the License.
 # ==============================================================================
 */
-#ifndef __TENSOTFLOW_BCBUE__
-#define __TENSOTFLOW_BCBUE__
+#ifndef __TENSOTFLOW_BCBUE_COMM_H__
+#define __TENSOTFLOW_BCBUE_COMM_H__
 
 
 #include <vector>
