@@ -1,7 +1,7 @@
 #ifndef __TENSORFLOW_BCUBE_RDMA_H__
 #define __TENSORFLOW_BCUBE_RDMA_H__
 
-#define HVAE_RDMA 1
+
 #if HVAE_RDMA
 
 #include <vector>
@@ -62,8 +62,8 @@ struct _recv_chain
 	void* data_ptr;
 	_recv_chain* next;
 };
-void rdma_all_init(bcube_struct&);
-void bcube_send_by_rdma(tensor_table_entry&, bcube_struct&, int);
+void rdma_all_init(bcube_struct& bcube_s);
+void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage);
 
 #endif // HAVE_RDMA
 #endif // __TENSORFLOW_BCUBE_RDMA_H__

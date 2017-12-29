@@ -39,6 +39,7 @@
 #include <pthread.h>
 #include <signal.h>
 
+#include "bcube_rdma.h"
 
 
 
