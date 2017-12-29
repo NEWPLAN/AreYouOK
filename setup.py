@@ -333,7 +333,7 @@ def fully_define_extension(build_ext):
         INCLUDES += rdma_include_dirs
         LIBRARY_DIRS += rdma_lib_dirs
         LINK_FLAGS += rdma_link_flags
-        LIBRARIES += ['rdma']
+        #LIBRARIES += ['rdma']
 
     if gpu_allreduce:
         MACROS += [('BCUBE_GPU_ALLREDUCE', "'%s'" % gpu_allreduce[0])]
