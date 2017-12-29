@@ -12,6 +12,7 @@
 
 extern std::atomic_bool server_establisted;
 extern std::atomic_bool client_establisted;
+extern void show_msg(void*);
 
 void rc_die(const char* reason)
 {
