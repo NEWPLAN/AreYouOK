@@ -51,7 +51,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 
 
 	std::memcpy(ctx->buffer, buff, len);
-	delete buff;
+	delete[] buff;
 
 	memset(&wr, 0, sizeof(wr));
 	wr.wr_id = (uintptr_t)id;
@@ -107,7 +107,7 @@ static void* recv_data(struct ibv_wc* wc)
 	{
 		uint32_t size = ntohl(wc->imm_data);
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
-		_data = (void*) (new char[size]);
+		_data = new char[size];
 		std::memcpy(_data, ctx->buffer, size);
 		post_receive_server(id);
 		ctx->msg->id = MSG_READY;
@@ -398,7 +398,7 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 			tensor_msg::decode(e, new_msg);
 			insert_to_recv_queue(bgs, e);
 			auto tmp_header = _rc_header->next;
-			delete _rc_header->data_ptr;
+			delete[] _rc_header->data_ptr;
 			delete _rc_header;
 			_rc_header = tmp_header;
 		}
