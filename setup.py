@@ -249,12 +249,14 @@ def get_rdma_dirs(build_ext):
                 uint32_t my_key;
                 uint64_t my_addr;
                 struct ibv_pd * pd = NULL;
-                struct rdma_event_channel* ec = rdma_create_event_channel();
+                rdma_create_event_channel();
                 mr = ibv_reg_mr(
                   pd, 
                   buffer, 
                   1024, 
                   IBV_ACCESS_REMOTE_WRITE);
+                my_key = mr->rkey;
+                my_addr = (uint64_t)mr->addr;
             }
             '''))
     except (CompileError, LinkError):
@@ -312,6 +314,8 @@ def fully_define_extension(build_ext):
 				'bcube/tensorflow/bcube_utils.cpp',
                'bcube/tensorflow/bcube_ops.cpp',
                'bcube/tensorflow/bcube_comm.cpp']
+    if have_rdma:
+        SOURCES+=['bcube/tensorflow/bcube_rdma.cpp']
     #COMPILE_FLAGS = ['-std=c++11', '-fPIC', '-Os'] + tf_compile_flags
     COMPILE_FLAGS = ['-std=c++11'] + tf_compile_flags
     LINK_FLAGS = tf_link_flags

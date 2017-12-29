@@ -9,6 +9,7 @@
 #include <rdma/rdma_cma.h>
 #include <thread>
 #include <iostream>
+#include "bcube_message.h"
 
 
 void rc_die(const char *reason);
@@ -61,5 +62,8 @@ struct _recv_chain
 	void* data_ptr;
 	_recv_chain* next;
 };
+void rdma_all_init(bcube_struct&);
+void bcube_send_by_rdma(tensor_table_entry&, bcube_struct&, int);
+
 #endif // HAVE_RDMA
 #endif // __TENSORFLOW_BCUBE_RDMA_H__
