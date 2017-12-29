@@ -116,7 +116,7 @@ static void* recv_data(struct ibv_wc* wc)
 	}
 	else
 	{
-		std::cout << "op code is " << wc->opcode << std::endl;
+		std::cout << "recv op code is " << wc->opcode << std::endl;
 	}
 	return _data;
 }
@@ -151,7 +151,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 	}
 	else
 	{
-		std::cout << "op code is " << wc->opcode << std::endl;
+		std::cout << "send op code is " << wc->opcode << std::endl;
 	}
 	return NULL;
 }
@@ -176,15 +176,19 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				auto recved_ptr = recv_data(&wc);
-				if (!recved_ptr)continue;
+				//if (wc.opcode == IBV_WC_RECV)
+				{
+					auto recved_ptr = recv_data(&wc);
+					if (!recved_ptr)continue;
 
-				auto tp_node = new _recv_chain;
-				tp_node->data_ptr = recved_ptr;
-				tp_node->next = NULL;
-				rcv_tail->next = tp_node;
-				rcv_tail = tp_node;
+					auto tp_node = new _recv_chain;
+					tp_node->data_ptr = recved_ptr;
+					tp_node->next = NULL;
+					rcv_tail->next = tp_node;
+					rcv_tail = tp_node;
+				}
 			}
+
 			else
 			{
 				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
@@ -216,12 +220,15 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 
 		while (ibv_poll_cq(cq, 1, &wc))
 		{
-			if (wc.status == IBV_WC_SUCCESS)
+			//if (wc.status == IBV_WC_SUCCESS)
 			{
-				auto tp_node = rcv_header->next;
-				send_data(&wc, tp_node->data_ptr);
-				delete rcv_header;
-				rcv_header = tp_node;
+				if (wc.opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+				{
+					auto tp_node = rcv_header->next;
+					send_data(&wc, tp_node->data_ptr);
+					delete rcv_header;
+					rcv_header = tp_node;
+				}
 			}
 			else
 			{
