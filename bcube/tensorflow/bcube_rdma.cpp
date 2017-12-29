@@ -204,7 +204,7 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 	void *ev_ctx = NULL;
 
 	_recv_chain* rcv_header = chain_header;
-	std::this_thread::sleep_for(std::chrono::seconds(5));
+	//std::this_thread::sleep_for(std::chrono::seconds(5));
 
 	while (true)
 	{
