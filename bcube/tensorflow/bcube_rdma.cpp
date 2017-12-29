@@ -561,6 +561,7 @@ static void rdma_client_init(bcube_struct& bs)
 			bs.neighbor_info[lev][index].send_list = send_chain;
 		}
 	}
+	std::this_thread::sleep_for(std::chrono::seconds(5));
 	client_establisted = true;
 	std::cout << "client inited done" << std::endl;
 }
