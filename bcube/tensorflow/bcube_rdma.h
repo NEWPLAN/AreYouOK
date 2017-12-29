@@ -9,8 +9,12 @@
 #include <rdma/rdma_cma.h>
 #include <thread>
 #include <iostream>
+
 #include "bcube_message.h"
 #include "bcube_comm.h"
+#include "bcube_utils.h"
+#include "bcube_ops.h"
+#include "bcube_message.h"
 
 
 void rc_die(const char *reason);
