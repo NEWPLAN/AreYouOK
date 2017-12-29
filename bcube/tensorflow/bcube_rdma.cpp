@@ -212,22 +212,26 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 
 	while (true)
 	{
+
 		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
 		ibv_ack_cq_events(cq, 1);
 		TEST_NZ(ibv_req_notify_cq(cq, 0));
-		while (!(rcv_header->next))//no data is ready... will sleep
-			std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+		//while (!(rcv_header->next))//no data is ready... will sleep
+		//std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
 		while (ibv_poll_cq(cq, 1, &wc))
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				//if (wc.opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+				if (wc.opcode & IBV_WC_RECV)
 				{
-					auto tp_node = rcv_header->next;
-					send_data(&wc, tp_node->data_ptr);
-					delete rcv_header;
-					rcv_header = tp_node;
+					while (!(rcv_header->next))std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+					{
+						auto tp_node = rcv_header->next;
+						send_data(&wc, tp_node->data_ptr);
+						delete rcv_header;
+						rcv_header = tp_node;
+					}
 				}
 			}
 			else
