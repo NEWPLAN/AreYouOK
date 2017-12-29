@@ -1,6 +1,6 @@
 #include "bcube_rdma.h"
 
-#if HVAE_RDMA
+#if HAVE_RDMA
 
 #include <errno.h>
 #include <iostream>
@@ -541,14 +541,15 @@ static void rdma_client_init(bcube_struct& bs)
 	std::cout << "client inited done" << std::endl;
 }
 
-void rdma_all_init(bcube_struct& bcube_s)
+bool rdma_all_init(bcube_struct& bcube_s)
 {
 	rdma_server_init(bcube_s);
 	rdma_client_init(bcube_s);
 	printf("rdma all inited done\n");
+	return true;
 }
 
-void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
+bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
@@ -571,6 +572,7 @@ void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
 			tmp_msg = nullptr;
 		}
 	}
+	return true;
 }
-
+//#endif //RDMA
 #endif
