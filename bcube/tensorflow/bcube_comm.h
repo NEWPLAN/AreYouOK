@@ -21,7 +21,6 @@
 #include <vector>
 #include <string>
 #include "bcube_message.h"
-#include "bcube_rdma.h"
 
 struct bcube_global_struct;
 struct node
