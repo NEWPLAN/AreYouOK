@@ -528,7 +528,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
 
+#if HAVE_RDMA
+				bcube_send_by_rdma(*it, bgs.bcube_s, unfin_index + 1);
+#else
 				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
+#endif
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
 			}
@@ -562,7 +566,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				//printf("in allreduce\n");
 				/*send out*/
+#if HAVE_RDMA
+				bcube_send_by_rdma((*it), bgs.bcube_s, 0);
+#else
 				bcube_send((*it), bgs.bcube_s, 0);
+#endif
 				/*move to unfinished vector*/
 				unfin[0].push_back(std::move(*it));
 			}
@@ -570,7 +578,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*enter a gather stage directly*/
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
+#if HAVE_RDMA
+				bcube_send_by_rdma((*it), bgs.bcube_s, unfin_size / 2);
+#else
 				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+#endif
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else
