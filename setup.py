@@ -215,6 +215,7 @@ def get_rdma_dirs(build_ext):
     rdma_include_dirs = []
     rdma_lib_dirs = []
     rdma_link_flags= []
+    rdma_lib= []
 
     rdma_home = os.environ.get('BCUBE_RDMA_HOME')
     if rdma_home:
