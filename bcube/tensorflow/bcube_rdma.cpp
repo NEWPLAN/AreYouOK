@@ -128,7 +128,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-			send_tensor(id, data, (msg_struct * data)->msg_len);
+			send_tensor(id, data, ((msg_struct *) data)->msg_len);
 		}
 		else if (ctx->msg->id == MSG_DONE)
 		{
@@ -139,7 +139,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-			send_tensor(id, data, (msg_struct * data)->msg_len);
+			send_tensor(id, data, ((msg_struct *) data)->msg_len);
 		}
 		post_receive_client(id);
 	}
@@ -170,7 +170,8 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				auto tp_node = recv_data(&wc);
+				auto tp_node = new _recv_chain;
+				tp_node->data_ptr = recv_data(&wc);
 				tp_node->next = NULL;
 				rcv_tail->next = tp_node;
 				rcv_tail = tp_node;
@@ -182,7 +183,7 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 			}
 		}
 	}
-	return NULL;
+	return ;
 }
 
 void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
@@ -268,10 +269,10 @@ void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *id)
 	qp_attr->cap.max_recv_sge = 1;
 }
 
-void build_connection(struct rdma_cm_id *id, bool is_server)
+void build_connection(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_header)
 {
 	struct ibv_qp_init_attr qp_attr;
-	build_context(id, is_server);
+	build_context(id, is_server, chain_header);
 	build_qp_attr(&qp_attr, id);
 
 	struct context *ctx = (struct context *)id->context;
@@ -339,7 +340,10 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 
 		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
 		{
-			build_connection(event_copy.id, IS_SERVER);
+			_recv_chain* rc_tp = new _recv_chain;
+			rc_tp->data_ptr = rc_tp->next = NULL;
+			build_connection(event_copy.id, IS_SERVER, rc_tp);
+			_recv_vec.push_back(rc_tp);
 			on_pre_conn(event_copy.id, IS_SERVER);
 			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 		}
