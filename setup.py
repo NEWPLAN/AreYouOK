@@ -248,9 +248,10 @@ def get_rdma_dirs(build_ext):
                 struct ibv_mr *mr;
                 uint32_t my_key;
                 uint64_t my_addr;
+                struct ibv_pd * pd = NULL;
                 struct rdma_event_channel* ec = rdma_create_event_channel();
                 mr = ibv_reg_mr(
-                  rc_get_pd(), 
+                  pd, 
                   buffer, 
                   1024, 
                   IBV_ACCESS_REMOTE_WRITE);
