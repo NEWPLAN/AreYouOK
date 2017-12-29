@@ -393,10 +393,12 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 			if (!_rc_header->next) continue;
 			if (!_rc_header->data_ptr) {throw std::runtime_error("_recvd data not be NULL");}
 			received_tensor_entry e;
+			auto& new_msg = _rc_header->data_ptr;
 			show_msg(new_msg);
 			tensor_msg::decode(e, new_msg);
 			insert_to_recv_queue(bgs, e);
 			auto tmp_header = _rc_header->next;
+			delete _rc_header->data_ptr;
 			delete _rc_header;
 			_rc_header = tmp_header;
 		}
