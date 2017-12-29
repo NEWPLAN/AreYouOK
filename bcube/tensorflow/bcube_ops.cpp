@@ -324,11 +324,7 @@ void release_src(tensor_table_entry& e)
 
 	return;
 }
-static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
-{
-	//e.callback();
-	printf("%s ", e.tensor_name.c_str());
-}
+
 static void finished_tensor(tensor_table_entry& e)
 {
 	Status status;

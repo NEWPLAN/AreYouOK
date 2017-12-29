@@ -94,20 +94,27 @@ static void setup_node(bcube_struct& bcube_s)
 
 /*default node info*/
 /*
-192.168.10.XXX
-192.168.11.XXX
+12.12.10.XXX
+12.12.11.XXX
 */
 static void topology_init(bcube_struct& bcube_s)
 {
 	printf("constructing a BCube(%d,%d) topology\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 	node_counts(bcube_s);
 
-	FILE* fp = fopen("/var/topo.txt", "r");
+	FILE* fp = NULL;
+
+#if HAVE_RDMA
+	fp = NULL;
+#else
+	fp = fopen("/var/topo.txt", "r");
+#endif
+
 	if (fp == NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
 		{
-			std::string ip_addr = "192.168.";
+			std::string ip_addr = "12.12.";
 			std::string leve_str = std::to_string((leve + 10));
 			std::vector<node> tp;/*each level*/
 			node tmp_node;
@@ -115,7 +122,7 @@ static void topology_init(bcube_struct& bcube_s)
 
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
-				tmp_node.ip = ip_addr + std::to_string(nodenum + 10);
+				tmp_node.ip = ip_addr + std::to_string(nodenum + 11);
 				tmp_node.node_index = nodenum;
 				tp.push_back(tmp_node);
 			}
@@ -133,7 +140,7 @@ static void topology_init(bcube_struct& bcube_s)
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
 				char ppp[128] = {0};
-				fscanf(fp, "%s", &ppp);
+				fscanf(fp, "%s", ppp);
 				ip_addr = ppp;
 				printf("ip: %s\n", ip_addr.c_str());
 				tmp_node.ip = ip_addr;
@@ -602,7 +609,7 @@ void show_msg(void* row_data)
 	}
 	printf("\n");
 }
-extern void show_msg(void*);
+
 static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
 {
 	msg_struct* tmp_msg = nullptr;
@@ -758,9 +765,6 @@ void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	/*send out...*/
 	return;
 }
-
-
-
 
 void bcube_test(void)
 {

@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <iostream>
 #include <arpa/inet.h>
+
 #define IS_SERVER true
 #define IS_CLIENT false
 
@@ -106,7 +107,7 @@ static void* recv_data(struct ibv_wc* wc)
 	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)//as server only
 	{
 		uint32_t size = ntohl(wc->imm_data);
-		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
+		//struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		_data = new char[size];
 		std::memcpy(_data, ctx->buffer, size);
 		post_receive_server(id);
@@ -175,8 +176,11 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
+				auto recved_ptr = recv_data(&wc);
+				if (!recved_ptr)continue;
+
 				auto tp_node = new _recv_chain;
-				tp_node->data_ptr = recv_data(&wc);
+				tp_node->data_ptr = recved_ptr;
 				tp_node->next = NULL;
 				rcv_tail->next = tp_node;
 				rcv_tail = tp_node;
@@ -237,10 +241,8 @@ struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 void build_params(struct rdma_conn_param *params)
 {
 	memset(params, 0, sizeof(*params));
-
 	params->initiator_depth = params->responder_resources = 1;
-	params->rnr_retry_count = 7; /* infinite retry */
-	params->retry_count = 7;
+	params->rnr_retry_count = params->retry_count = 7;/* infinite retry */
 }
 
 void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_header)
@@ -254,8 +256,7 @@ void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_hea
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		//TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, id));/*create recv threads*/
-		s_ctx->cq_poller_thread = std::thread(rcv_poll_cq, id, chain_header);
+		s_ctx->cq_poller_thread = std::thread(rcv_poll_cq, id, chain_header);/*create recv threads*/
 		id->context = (void*)s_ctx;
 	}
 }
@@ -493,7 +494,7 @@ static void rdma_client_init(bcube_struct& bs)
 				if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
 				{
 					/*here is error*/
-					build_connection(event_copy.id, IS_CLIENT, NULL);
+					build_connection(event_copy.id, IS_CLIENT, send_chain);
 					on_pre_conn(event_copy.id, IS_CLIENT);
 					TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
 				}
