@@ -67,6 +67,8 @@ struct _recv_chain
 	void* data_ptr;
 	_recv_chain* next;
 };
+struct bcube_struct;
+//struct tensor_table_entry;
 bool rdma_all_init(bcube_struct& bcube_s);
 bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage);
 
