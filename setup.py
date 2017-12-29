@@ -30,6 +30,8 @@ tensorflow_bcube_lib = Extension('bcube.tensorflow.bcube_lib', [])
 os.environ['BCUBE_GPU_ALLREDUCE']='TCP'
 os.environ['BCUBE_GPU_ALLGATHER']='TCP'
 os.environ['BCUBE_GPU_BROADCAST']='TCP'
+os.environ['BCUBE_GPU_ALLREDUCE']='RDMA'
+os.environ['BCUBE_GPU_ALLGATHER']='RDMA'
 os.environ['BCUBE_GPU_BROADCAST']='RDMA'
 print(os.environ.get('BCUBE_GPU_ALLREDUCE'))
 print(os.environ.get('BCUBE_GPU_ALLGATHER'))

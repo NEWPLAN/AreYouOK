@@ -62,3 +62,4 @@ struct _recv_chain
 	_recv_chain* next;
 };
 #endif // HAVE_RDMA
+#endif // __TENSORFLOW_BCUBE_RDMA_H__
