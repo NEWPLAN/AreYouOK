@@ -220,9 +220,9 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 
 		while (ibv_poll_cq(cq, 1, &wc))
 		{
-			//if (wc.status == IBV_WC_SUCCESS)
+			if (wc.status == IBV_WC_SUCCESS)
 			{
-				if (wc.opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+				//if (wc.opcode == IBV_WC_RECV_RDMA_WITH_IMM)
 				{
 					auto tp_node = rcv_header->next;
 					send_data(&wc, tp_node->data_ptr);
