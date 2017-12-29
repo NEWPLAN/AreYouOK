@@ -492,7 +492,8 @@ static void rdma_client_init(bcube_struct& bs)
 				rdma_ack_cm_event(event);
 				if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
 				{
-					build_connection(event_copy.id, IS_CLIENT);
+					/*here is error*/
+					build_connection(event_copy.id, IS_CLIENT, NULL);
 					on_pre_conn(event_copy.id, IS_CLIENT);
 					TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
 				}
@@ -574,7 +575,7 @@ bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
 		for (auto& it : steps[process_index])
 		{
 			int len = 0;
-			tensor_msg::encode(a_tensor, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
+			tensor_msg::encode(e, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
 			//printf("send out: %s,\t send len=%d\n",a_tensor.tensor_name.c_str(),len);
 			show_msg((void*)tmp_msg);
 
