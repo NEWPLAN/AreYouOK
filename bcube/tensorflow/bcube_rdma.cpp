@@ -555,15 +555,15 @@ static void rdma_client_init(bcube_struct& bs)
 	std::cout << "client inited done" << std::endl;
 }
 
-bool rdma_all_init(bcube_struct& bcube_s)
+void rdma_all_init(bcube_struct& bcube_s)
 {
 	rdma_server_init(bcube_s);
 	rdma_client_init(bcube_s);
 	printf("rdma all inited done\n");
-	return true;
+	return ;
 }
 
-bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
+void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
@@ -586,7 +586,7 @@ bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
 			tmp_msg = nullptr;
 		}
 	}
-	return true;
+	return;
 }
 //#endif //RDMA
 #endif

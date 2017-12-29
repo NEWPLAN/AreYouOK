@@ -66,8 +66,8 @@ struct _recv_chain
 };
 struct bcube_struct;
 //struct tensor_table_entry;
-bool rdma_all_init(bcube_struct& bcube_s);
-bool bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage);
+void rdma_all_init(bcube_struct& bcube_s);
+void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage);
 
 #endif // HAVE_RDMA
 #endif // __TENSORFLOW_BCUBE_RDMA_H__
