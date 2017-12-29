@@ -48,8 +48,11 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 	struct context *ctx = (struct context *)id->context;
 	struct ibv_send_wr wr, *bad_wr = NULL;
 	struct ibv_sge sge;
-	if (!buff)throw std::runtime_error("send buf can not be empty!");
-
+	if (!buff)
+	{
+		printf("buff can not be empty\n");
+		throw std::runtime_error("send buf can not be empty!");
+	}
 
 	std::memcpy(ctx->buffer, buff, len);
 	delete[] buff;
@@ -191,7 +194,7 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 
 			else
 			{
-				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				printf("fatal error : wc = %s\n", ibv_wc_status_str(wc.status));
 				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
 			}
 		}
@@ -237,10 +240,11 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 			else
 			{
 				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
-				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+				rc_die("send poll_cq: status is not IBV_WC_SUCCESS");
 			}
 		}
 	}
+	printf("fatal: send poll cq error\n");
 	return ;
 }
 
@@ -402,9 +406,17 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 	{
 		for (auto& _rc_header : _recv_vec)
 		{
-			if (!_rc_header) {throw std::runtime_error("_recv_vec header should not be NULL");}
+			if (!_rc_header)
+			{
+				printf("fatal error : _rc_header can not be empty\n");
+				throw std::runtime_error("_recv_vec header should not be NULL");
+			}
 			if (!_rc_header->next) continue;
-			if (!_rc_header->data_ptr) {throw std::runtime_error("_recvd data not be NULL");}
+			if (!_rc_header->data_ptr)
+			{
+				printf("fatal error: recv data can not be NULL\n");
+				throw std::runtime_error("_recvd data not be NULL");
+			}
 			received_tensor_entry e;
 			auto& new_msg = _rc_header->data_ptr;
 			show_msg(new_msg);
@@ -416,6 +428,7 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 			_rc_header = tmp_header;
 		}
 	}
+	printf("recv loop for rdma exit now...\n");
 	return;
 }
 
@@ -458,7 +471,7 @@ static void rdma_server_init(bcube_struct & bs)
 
 	bcube_gs.bg_thread.push_back(std::thread(rdma_recv_loops, std::ref(bcube_gs)));
 	printf("server inited done...\n");
-	std::this_thread::sleep_for(std::chrono::seconds(10));
+	std::this_thread::sleep_for(std::chrono::seconds(2));
 	return;
 }
 static void rdma_client_init(bcube_struct& bs)
@@ -575,6 +588,7 @@ void rdma_all_init(bcube_struct& bcube_s)
 	rdma_server_init(bcube_s);
 	rdma_client_init(bcube_s);
 	printf("rdma all inited done\n");
+	while (1);
 	return ;
 }
 
