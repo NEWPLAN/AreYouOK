@@ -1,6 +1,7 @@
 #include "bcube_rdma.h"
 #include "bcube_comm.h"
 #include "bcube_message.h"
+#include "bcube_ops.h"
 
 #if HAVE_RDMA
 
