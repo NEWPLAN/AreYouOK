@@ -39,8 +39,9 @@
 #include <pthread.h>
 #include <signal.h>
 
+#if HAVE_RDMA
 #include "bcube_rdma.h"
-
+#endif
 
 
 /*flag indicate background thread status.*/
@@ -565,8 +566,7 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 	setup_node(bcube_s);
 
 #if HAVE_RDMA
-	rmda_all_init(bcube_s);
-
+	rdma_all_init(bcube_s);
 #else
 	server_init(bcube_s);
 	client_init(bcube_s);
