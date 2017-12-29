@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <iostream>
+#include <arpa/inet.h>
 
 extern std::atomic_bool server_establisted;
 extern std::atomic_bool client_establisted;
@@ -399,7 +400,7 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 	return;
 }
 
-
+extern bcube_global_struct bcube_gs;
 
 static void rdma_server_init(bcube_struct & bs)
 {
