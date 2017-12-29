@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <iostream>
 #include <arpa/inet.h>
+#define IS_SERVER true
+#define IS_CLIENT false
 
 extern std::atomic_bool server_establisted;
 extern std::atomic_bool client_establisted;
