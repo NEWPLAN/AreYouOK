@@ -581,6 +581,7 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 	get_send_strategy(bcube_s);
 	while (!check_bcube_is_inited_done(bcube_s))
 		std::this_thread::sleep_for(std::chrono::seconds(1));
+	while (true);
 	return;
 }
 
