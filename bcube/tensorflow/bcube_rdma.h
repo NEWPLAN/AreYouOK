@@ -61,7 +61,7 @@ struct context
 
 struct _recv_chain
 {
-	void* data_ptr;
+	char* data_ptr;
 	_recv_chain* next;
 };
 struct bcube_struct;
