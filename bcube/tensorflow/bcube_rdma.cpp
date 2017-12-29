@@ -1,4 +1,6 @@
 #include "bcube_rdma.h"
+#include "bcube_comm.h"
+#include "bcube_message.h"
 
 #if HAVE_RDMA
 
@@ -8,7 +10,7 @@
 extern std::atomic_bool server_establisted;
 extern std::atomic_bool client_establisted;
 
-static void rc_die(const char* reason)
+void rc_die(const char* reason)
 {
 	fprintf(stderr, "%s\n", reason);
 	exit(-1);
@@ -126,7 +128,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-			send_tensor(id, data, data->msg_len);
+			send_tensor(id, data, (msg_struct * data)->msg_len);
 		}
 		else if (ctx->msg->id == MSG_DONE)
 		{
@@ -137,7 +139,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-			send_tensor(id, data, data->msg_len);
+			send_tensor(id, data, (msg_struct * data)->msg_len);
 		}
 		post_receive_client(id);
 	}
