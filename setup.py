@@ -245,18 +245,13 @@ def get_rdma_dirs(build_ext):
             void test() 
             {
                 char *buffer =NULL;
-                struct ibv_mr *mr;
-                uint32_t my_key;
-                uint64_t my_addr;
                 struct ibv_pd * pd = NULL;
                 rdma_create_event_channel();
-                mr = ibv_reg_mr(
+                ibv_reg_mr(
                   pd, 
                   buffer, 
                   1024, 
                   IBV_ACCESS_REMOTE_WRITE);
-                my_key = mr->rkey;
-                my_addr = (uint64_t)mr->addr;
             }
             '''))
     except (CompileError, LinkError):
