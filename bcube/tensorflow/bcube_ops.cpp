@@ -112,8 +112,11 @@ void bg_loops(bcube_global_struct& bgs)
 
 	bcube_init(bgs.bcube_s, bgs);
 	bgs.unfinished_tensor.resize(4);
-	bgs.is_inited_done = true;
+
 	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
+	//for debug................................
+	while (true);
+	bgs.is_inited_done = true;
 	while (!(bgs.shut_down))
 	{
 		bcube_do_steps(bgs);
