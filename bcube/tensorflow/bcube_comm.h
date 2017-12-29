@@ -93,5 +93,6 @@ struct bcube_struct
 
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
+void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e);
 
 #endif

@@ -146,7 +146,7 @@ static void topology_init(bcube_struct& bcube_s)
 	printf("BCube(%d,%d) is constructed done!\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 }
 struct bcube_global_struct;
-static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
+void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 {
 	auto& bs = bgs.bcube_s;
 	auto& recv_queue = bgs.receiv_tmp_tensor;
