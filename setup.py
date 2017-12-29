@@ -229,7 +229,7 @@ def get_rdma_dirs(build_ext):
     rdma_lib = os.environ.get('BCUBE_CUDA_LIB')
     if rdma_lib:
         rdma_lib_dirs += [rdma_lib]
-    else
+    else:
         rdma_lib =[]
 
     if not rdma_include_dirs and not rdma_lib_dirs:
