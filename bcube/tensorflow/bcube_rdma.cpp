@@ -5,6 +5,9 @@
 #include <errno.h>
 #include <iostream>
 
+extern std::atomic_bool server_establisted;
+extern std::atomic_bool client_establisted;
+
 static void rc_die(const char* reason)
 {
 	fprintf(stderr, "%s\n", reason);
@@ -38,11 +41,11 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 	struct ibv_send_wr wr, *bad_wr = NULL;
 	struct ibv_sge sge;
 	if (!buff)throw std::runtime_error("send buf can not be empty!");
-	
-	
+
+
 	std::memcpy(ctx->buffer, buff, len);
 	delete buff;
-	
+
 	memset(&wr, 0, sizeof(wr));
 	wr.wr_id = (uintptr_t)id;
 	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -538,17 +541,11 @@ static void rdma_client_init(bcube_struct& bs)
 	std::cout << "client inited done" << std::endl;
 }
 
-void rdma_all_init()
+void rdma_all_init(bcube_struct& bcube_s)
 {
-	rdma_server_init();
-	rdma_client_init();
-	while (!(client_establisted && server_establisted))
-	{
-		std::cout << "waiting for client and server inited..." << std::endl;
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-	}
-	std::cout << "server and client is inited." << std::endl;
-	std::this_thread::sleep_for(std::chrono::seconds(1));
+	rdma_server_init(bcube_s);
+	rdma_client_init(bcube_s);
+	printf("rdma all inited done\n");
 }
 
 void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)

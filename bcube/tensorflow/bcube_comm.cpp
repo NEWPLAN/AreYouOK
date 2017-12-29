@@ -43,8 +43,8 @@
 
 
 /*flag indicate background thread status.*/
-static std::atomic_bool server_establisted(false);
-static std::atomic_bool client_establisted(false);
+std::atomic_bool server_establisted(false);
+std::atomic_bool client_establisted(false);
 //static void show_msg(void* row_data);
 
 /* count all nodes N=n^k */
@@ -565,7 +565,7 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 
 #if HAVE_RDMA
 	rmda_all_init(bcube_s);
-	
+
 #else
 	server_init(bcube_s);
 	client_init(bcube_s);

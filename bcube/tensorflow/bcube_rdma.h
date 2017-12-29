@@ -10,22 +10,6 @@
 #include <thread>
 #include <iostream>
 
-/*
-class rdma_channel
-{
-public:
-	rdma_channel() {};
-	void rc_die(std::string);
-	~rdma_channel() {};
-};
-
-struct rdma_adapter
-{
-private:
-	size_t BUFFER_SIZE = 512 * 1024 * 1024 + 1;//default is 512 MB
-};
-*/
-
 
 void rc_die(const char *reason);
 
