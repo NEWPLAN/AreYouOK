@@ -17,7 +17,6 @@
 #ifndef __TENSOTFLOW_BCBUE__
 #define __TENSOTFLOW_BCBUE__
 
-#define HAVE_RDMA 1
 
 #include <vector>
 #include <string>
@@ -55,7 +54,7 @@ typedef struct
 	struct _recv_chain* send_list;
 #endif // HAVE_RDMA
 
-}send_to_one;
+} send_to_one;
 
 /*
 D1:node index;
@@ -76,10 +75,10 @@ struct bcube_struct
 	int rank;
 
 	int server_fd;/*server listen fd*/
-	int server_port=9610;/*public port*/
+	int server_port = 9610; /*public port*/
 
 	std::vector<int> recv_fd;/*recv socket fd*/
-	std::vector<std::vector<node>> topo,neighbor_info;
+	std::vector<std::vector<node>> topo, neighbor_info;
 
 	node local_info;/*local server socket, will be free after initilization*/
 

@@ -2,7 +2,7 @@
 #define __TENSORFLOW_BCUBE_RDMA_H__
 
 
-#if HVAE_RDMA
+#if HAVE_RDMA
 
 #include <vector>
 #include <string>
