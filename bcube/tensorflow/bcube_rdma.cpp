@@ -132,7 +132,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-			send_tensor(id, data, ((msg_struct *) data)->msg_len);
+			send_tensor(id, data, ((msg_struct *) data)->msg_length);
 		}
 		else if (ctx->msg->id == MSG_DONE)
 		{
@@ -143,7 +143,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-			send_tensor(id, data, ((msg_struct *) data)->msg_len);
+			send_tensor(id, data, ((msg_struct *) data)->msg_length);
 		}
 		post_receive_client(id);
 	}
