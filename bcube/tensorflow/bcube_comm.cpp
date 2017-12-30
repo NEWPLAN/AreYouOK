@@ -100,6 +100,8 @@ static void topology_init(bcube_struct& bcube_s)
 	node_counts(bcube_s);
 	FILE* fp = NULL;
 #if HAVE_RDMA
+	fp = NULL;
+#else
 	fp = fopen("/var/topo.txt", "r");
 #endif
 	if (fp == NULL)
