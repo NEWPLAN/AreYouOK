@@ -317,7 +317,7 @@ static void send_transport_RDMA(struct ibv_wc *wc, node_item** send_header)
 			void* data = new_header->data_ptr;
 			(*send_header) = new_header;
 			if (data)
-				send_tensor(id, data, ((msg_struct*)data)->msg_length);
+				send_tensor(id, (char*)data, ((msg_struct*)data)->msg_length);
 			else
 				printf("this should never happen with send nothing\n");
 		}
@@ -330,8 +330,14 @@ static void send_transport_RDMA(struct ibv_wc *wc, node_item** send_header)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
+			while ((*send_header)->next == nullptr)
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+			auto new_header = (*send_header)->next;
+			delete send_header;
+			void* data = new_header->data_ptr;
+			(*send_header) = new_header;
 			if (data)
-				send_tensor(id, data, ((msg_struct*)data)->msg_length);
+				send_tensor(id, (char*)data, ((msg_struct*)data)->msg_length);
 			else
 				printf("this should never happen with send nothing\n");
 		}
