@@ -160,7 +160,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 	return NULL;
 }
 
-void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
+void rcv_poll_cq(void *tmp_id, void* chain_header_in)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
@@ -168,7 +168,7 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
 
-	_recv_chain* rcv_tail = chain_header;
+	_recv_chain* rcv_tail = (_recv_chain*)chain_header_in;
 
 	while (true)
 	{
@@ -275,7 +275,7 @@ void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_hea
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		s_ctx->cq_poller_thread = std::thread(rcv_poll_cq, id, chain_header);/*create recv threads*/
+		s_ctx->cq_poller_thread = std::thread(rcv_poll_cq, id, (void*)chain_header);/*create recv threads*/
 		id->context = (void*)s_ctx;
 	}
 }
