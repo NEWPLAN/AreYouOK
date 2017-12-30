@@ -16,6 +16,9 @@ extern std::atomic_bool server_establisted;
 extern std::atomic_bool client_establisted;
 extern void show_msg(void*);
 
+
+static _recv_chain* all_chains[10] = {NULL};
+
 void rc_die(const char* reason)
 {
 	printf("in rc die.. %s\n", reason);
@@ -23,7 +26,7 @@ void rc_die(const char* reason)
 	exit(-1);
 }
 
-static void send_message(struct rdma_cm_id *id)
+static void send_message(struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 	struct ibv_send_wr wr, *bad_wr = NULL;
@@ -44,7 +47,7 @@ static void send_message(struct rdma_cm_id *id)
 	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
+static void send_tensor(struct rdma_cm_id * id, char* buff, uint32_t len)
 {
 	struct context *ctx = (struct context *)id->context;
 	struct ibv_send_wr wr, *bad_wr = NULL;
@@ -77,7 +80,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-static void post_receive_client(struct rdma_cm_id *id)
+static void post_receive_client(struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 	struct ibv_recv_wr wr, *bad_wr = NULL;
@@ -92,7 +95,7 @@ static void post_receive_client(struct rdma_cm_id *id)
 	TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
 
-static void post_receive_server(struct rdma_cm_id *id)
+static void post_receive_server(struct rdma_cm_id * id)
 {
 	struct ibv_recv_wr wr, *bad_wr = NULL;
 	memset(&wr, 0, sizeof(wr));
@@ -103,7 +106,7 @@ static void post_receive_server(struct rdma_cm_id *id)
 }
 
 
-static void* recv_data(struct ibv_wc* wc)
+static void* recv_data(struct ibv_wc * wc)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
@@ -125,7 +128,7 @@ static void* recv_data(struct ibv_wc* wc)
 	return _data;
 }
 
-static void* send_data(struct ibv_wc* wc, void* data)
+static void* send_data(struct ibv_wc * wc, void* data)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
@@ -160,7 +163,7 @@ static void* send_data(struct ibv_wc* wc, void* data)
 	return NULL;
 }
 
-void rcv_poll_cq(void *tmp_id, void* chain_header_in)
+void rcv_poll_cq(void *tmp_id, int index)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
@@ -168,7 +171,8 @@ void rcv_poll_cq(void *tmp_id, void* chain_header_in)
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
 
-	_recv_chain* rcv_tail = (_recv_chain*)chain_header_in;
+	_recv_chain* rcv_tail = all_chains[index];
+	printf("current recv_poll_cq is %d with %p\n", index, rcv_tail );
 
 	while (true)
 	{
@@ -205,7 +209,7 @@ void rcv_poll_cq(void *tmp_id, void* chain_header_in)
 	return ;
 }
 
-void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
+void send_poll_cq(void * tmp_id, _recv_chain * chain_header)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
@@ -251,20 +255,20 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 	return ;
 }
 
-struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
+struct ibv_pd * rc_get_pd(struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 	return ctx->pd;
 }
 
-void build_params(struct rdma_conn_param *params)
+void build_params(struct rdma_conn_param * params)
 {
 	memset(params, 0, sizeof(*params));
 	params->initiator_depth = params->responder_resources = 1;
 	params->rnr_retry_count = params->retry_count = 7;/* infinite retry */
 }
 
-void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_header)
+void build_context(struct rdma_cm_id * id, bool is_server, int index)
 {
 	struct context *s_ctx = (struct context *)malloc(sizeof(struct context));
 	s_ctx->ibv_ctx = id->verbs;
@@ -276,12 +280,12 @@ void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_hea
 	if (is_server)
 	{
 		//s_ctx->cq_poller_thread = std::move(
-		std::thread(rcv_poll_cq, id, (void*)chain_header);//);/*create recv threads*/
+		std::thread(rcv_poll_cq, id, index);//);/*create recv threads*/
 		id->context = (void*)s_ctx;
 	}
 }
 
-void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *id)
+void build_qp_attr(struct ibv_qp_init_attr * qp_attr, struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 	memset(qp_attr, 0, sizeof(*qp_attr));
@@ -295,17 +299,17 @@ void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *id)
 	qp_attr->cap.max_recv_sge = 1;
 }
 
-void build_connection(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_header)
+void build_connection(struct rdma_cm_id * id, bool is_server, int index)
 {
 	struct ibv_qp_init_attr qp_attr;
-	build_context(id, is_server, chain_header);
+	build_context(id, is_server, int index);
 	build_qp_attr(&qp_attr, id);
 
 	struct context *ctx = (struct context *)id->context;
 	TEST_NZ(rdma_create_qp(id, ctx->pd, &qp_attr));
 }
 
-static void on_pre_conn(struct rdma_cm_id *id, bool is_server)
+static void on_pre_conn(struct rdma_cm_id * id, bool is_server)
 {
 	struct context *ctx = (struct context *)id->context;
 	posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
@@ -322,7 +326,7 @@ static void on_pre_conn(struct rdma_cm_id *id, bool is_server)
 		post_receive_client(id);
 }
 
-static void on_connection(struct rdma_cm_id *id)
+static void on_connection(struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 
@@ -333,7 +337,7 @@ static void on_connection(struct rdma_cm_id *id)
 	send_message(id);
 }
 
-static void on_disconnect(struct rdma_cm_id *id)
+static void on_disconnect(struct rdma_cm_id * id)
 {
 	struct context *ctx = (struct context *)id->context;
 
@@ -346,7 +350,7 @@ static void on_disconnect(struct rdma_cm_id *id)
 }
 
 
-static void rdma_recv_loops(bcube_global_struct& bgs)
+static void rdma_recv_loops(bcube_global_struct & bgs)
 {
 	bcube_struct& bs = bgs.bcube_s;
 	struct rdma_cm_event *event = NULL;
@@ -366,9 +370,12 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 
 		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
 		{
+			static int index = 0;
 			_recv_chain* rc_tp = new _recv_chain;
 			rc_tp->data_ptr = rc_tp->next = NULL;
-			build_connection(event_copy.id, IS_SERVER, rc_tp);
+			all_chains[index] = rc_tp;
+			build_connection(event_copy.id, IS_SERVER, index);
+			index++;
 			_recv_vec.push_back(rc_tp);
 			on_pre_conn(event_copy.id, IS_SERVER);
 			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
@@ -481,7 +488,7 @@ static void rdma_server_init(bcube_struct & bs)
 	std::this_thread::sleep_for(std::chrono::seconds(2));
 	return;
 }
-static void rdma_client_init(bcube_struct& bs)
+static void rdma_client_init(bcube_struct & bs)
 {
 	std::cout << "client with RDMA is initing" << std::endl;
 	for (size_t lev = 0; lev < bs.neighbor_info.size(); lev++)
@@ -590,7 +597,7 @@ static void rdma_client_init(bcube_struct& bs)
 	std::cout << "client inited done" << std::endl;
 }
 
-void rdma_all_init(bcube_struct& bcube_s)
+void rdma_all_init(bcube_struct & bcube_s)
 {
 	rdma_server_init(bcube_s);
 	rdma_client_init(bcube_s);
@@ -599,7 +606,7 @@ void rdma_all_init(bcube_struct& bcube_s)
 	return ;
 }
 
-void bcube_send_by_rdma(tensor_table_entry& e, bcube_struct& bs, int stage)
+void bcube_send_by_rdma(tensor_table_entry & e, bcube_struct & bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
