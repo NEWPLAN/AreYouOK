@@ -108,11 +108,19 @@ static  int TYPE_SIZE[] =
 void bcube_do_steps(bcube_global_struct&);
 void bg_loops(bcube_global_struct& bgs)
 {
-
+#if HAVE_RDMA
+	rdma_bcube_init(bgs.bcube_s, bgs);
+#else
 	bcube_init(bgs.bcube_s, bgs);
+#endif
 	bgs.unfinished_tensor.resize(4);
 	bgs.is_inited_done = true;
 	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
+	while (true)
+	{
+		std::cout << "will block here ..." << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(100));
+	}
 	while (!(bgs.shut_down))
 	{
 		bcube_do_steps(bgs);

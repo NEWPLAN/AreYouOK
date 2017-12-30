@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include "bcube_message.h"
+#include "bcube_rdma.h"
 
 struct bcube_global_struct;
 struct node
@@ -30,6 +31,11 @@ struct node
 	/*below is for server*/
 	std::vector<std::string> myip;
 
+#if HAVE_RDMA
+	struct rdma_cm_id* send_rdma_cm_id;
+	struct rdma_event_channel* send_rdma_event_channel;
+#endif
+
 };
 
 typedef struct
@@ -39,7 +45,7 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
-}send_to_one;
+} send_to_one;
 
 /*
 D1:node index;
@@ -60,15 +66,22 @@ struct bcube_struct
 	int rank;
 
 	int server_fd;/*server listen fd*/
-	int server_port=9610;/*public port*/
+	int server_port = 9610; /*public port*/
 
 	std::vector<int> recv_fd;/*recv socket fd*/
-	std::vector<std::vector<node>> topo,neighbor_info;
+	std::vector<std::vector<node>> topo, neighbor_info;
 
 	node local_info;/*local server socket, will be free after initilization*/
 
 	std::vector<step> nodes_send_strategy;/*global send strategy*/
 	std::vector<process> my_strategy;/*strategy for current rank*/
+
+#if HAVE_RDMA
+	struct rdma_event_channel *event_channel;
+	struct rdma_cm_id *listener;
+	std::vector<rdma_cm_id*> recv_rdma_cm_id;
+#endif
+
 };
 
 void bcube_init(bcube_struct&, bcube_global_struct&);
