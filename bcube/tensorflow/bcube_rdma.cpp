@@ -275,7 +275,8 @@ void build_context(struct rdma_cm_id *id, bool is_server, _recv_chain* chain_hea
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		s_ctx->cq_poller_thread = std::move(std::thread(rcv_poll_cq, id, (void*)chain_header));/*create recv threads*/
+		//s_ctx->cq_poller_thread = std::move(
+		std::thread(rcv_poll_cq, id, (void*)chain_header);//);/*create recv threads*/
 		id->context = (void*)s_ctx;
 	}
 }
