@@ -1,6 +1,10 @@
 #ifndef __TENSORFLOW_BCUBE_RDMA_H__
 #define __TENSORFLOW_BCUBE_RDMA_H__
-
+#include <vector>
+#include <string>
+#include <pthread.h>
+#if HAVE_RDMA
+#include <rdma/rdma_cma.h>
 enum message_id
 {
 	MSG_INVALID = 0,
@@ -43,4 +47,5 @@ struct bcube_struct;
 
 void rdma_bcube_init(bcube_struct&, bcube_global_struct&);
 void rdma_bcube_send(tensor_table_entry& , bcube_struct& , int );
+#endif
 #endif
