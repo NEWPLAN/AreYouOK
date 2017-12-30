@@ -326,6 +326,7 @@ void release_src(tensor_table_entry& e)
 }
 static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
 {
+	return;
 	//e.callback();
 	printf("%s element: %ld\n", e.tensor_name.c_str(), e.tensor.NumElements());
 }
