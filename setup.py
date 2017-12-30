@@ -21,7 +21,6 @@ import shlex
 import subprocess
 import textwrap
 import traceback
-
 from bcube import __version__
 #This version is 0.1
 
