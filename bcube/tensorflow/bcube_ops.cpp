@@ -116,11 +116,6 @@ void bg_loops(bcube_global_struct& bgs)
 	bgs.unfinished_tensor.resize(4);
 	bgs.is_inited_done = true;
 	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
-	while (true)
-	{
-		std::cout << "will block here ..." << std::endl;
-		std::this_thread::sleep_for(std::chrono::seconds(100));
-	}
 	while (!(bgs.shut_down))
 	{
 		bcube_do_steps(bgs);
@@ -541,7 +536,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
 
+#if HAVE_RDMA
+				rdma_bcube_send(*it, bgs.bcube_s, unfin_index + 1);
+#else
 				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
+#endif
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
 			}
@@ -575,7 +574,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				//printf("in allreduce\n");
 				/*send out*/
+#if HAVE_RDMA
+				rdma_bcube_send((*it), bgs.bcube_s, 0);
+#else
 				bcube_send((*it), bgs.bcube_s, 0);
+#endif
 				/*move to unfinished vector*/
 				unfin[0].push_back(std::move(*it));
 			}
@@ -583,7 +586,11 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*enter a gather stage directly*/
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
+#if HAVE_RDMA
+				rdma_bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+#else
 				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
+#endif
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else

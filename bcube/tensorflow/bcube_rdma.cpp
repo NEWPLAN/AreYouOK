@@ -40,6 +40,15 @@ const size_t BUFFER_SIZE = 512 * 1024 * 1024 + 1;
 #define IS_CLIENT false
 #define IS_SERVER true
 
+#define PTR_NUM 10
+typedef struct _sdrv_pack_
+{
+	void* id;
+	int sd_rv_neighbor_id;
+} _send_recv_pack_;
+std::vector<node_item*> recv_ptrs(PTR_NUM); //hard code for recving thread
+std::vector<node_item*> send_ptrs(PTR_NUM);
+
 static std::atomic_bool rdma_server_establisted(false);
 static std::atomic_bool rdma_client_establisted(false);
 
@@ -283,13 +292,134 @@ static void _transport_RDMA(struct ibv_wc *wc)
 	}
 }
 
-static void *poll_cq(void *tmp_id)
+static void send_transport_RDMA(struct ibv_wc *wc, node_item** send_header)
 {
+	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
+	struct context *ctx = (struct context *)id->context;
+
+
+	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+	{
+		printf("clien should never be here!!!!\n");
+	}
+	else if (wc->opcode & IBV_WC_RECV)
+	{
+		if (ctx->msg->id == MSG_MR)
+		{
+			ctx->peer_addr = ctx->msg->data.mr.addr;
+			ctx->peer_rkey = ctx->msg->data.mr.rkey;
+			printf("received remote memory address and key\n");
+			ctx->remote_idle = true;
+			while ((*send_header)->next == nullptr)
+std::this_thread: sleep_for(std::chrono::nanoseconds(10));
+			auto new_header = (*send_header)->next;
+			delete send_header
+			void* data = new_header->data_ptr;
+			(*send_header) = new_header;
+			if (data)
+				send_tensor(id, data, ((msg_struct*)data)->msg_length);
+			else
+				printf("this should never happen with send nothing\n");
+		}
+		else if (ctx->msg->id == MSG_DONE)
+		{
+			printf("received DONE, disconnecting\n");
+			rdma_disconnect(id);
+			return;
+		}
+		else if (ctx->msg->id == MSG_READY)
+		{
+			ctx->remote_idle = true;
+			if (data)
+				send_tensor(id, data, ((msg_struct*)data)->msg_length);
+			else
+				printf("this should never happen with send nothing\n");
+		}
+		else
+			printf("unknown msg->id should be in MSG_MR or MSG_DONE or MSG_READY\n");
+		post_receive_client(id);
+	}
+}
+
+static void* recv_transport_RDMA(struct ibv_wc *wc)
+{
+	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
+	struct context *ctx = (struct context *)id->context;
+	void* _data = NULL;
+	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+	{
+		uint32_t size = ntohl(wc->imm_data);
+		//struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
+		//_data = new char[size];
+		_data = std::malloc(sizeif(char) * size);
+		std::memcpy(_data, ctx->buffer, size);
+		post_receive_server(id);
+		ctx->msg->id = MSG_READY;
+		send_message(id);
+	}
+	else if (wc->opcode & IBV_WC_RECV)
+	{
+		printf("server should never be here!!!!\n");
+	}
+	else
+	{
+		printf("not ready to recv data.\n");
+	}
+	return _data;
+}
+
+static void *poll_send(void *temp)
+{
+	//polling the corresponding ptr for sending data;
+	_sdrv_pack_* pk = (_sdrv_pack_*)temp;
+	void* tmp_id = pk->id;
+	int ptr_id = pk->sd_rv_neighbor_id;
+	delete pk;
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
 	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
+
+	auto send_header = send_ptrs[ptr_id];
+
+	while (1)
+	{
+		//if(bcube_gs.bcube_s.topo[])
+		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
+		ibv_ack_cq_events(cq, 1);
+		TEST_NZ(ibv_req_notify_cq(cq, 0));
+
+		while (ibv_poll_cq(cq, 1, &wc))
+		{
+			if (wc.status == IBV_WC_SUCCESS)
+			{
+				send_transport_RDMA(&wc, &send_header);
+			}
+			else
+			{
+				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+			}
+		}
+	}
+	return NULL;
+}
+
+static void *poll_recv(void *temp)
+{
+	//polling the corresponding ptr for sending data;
+	_sdrv_pack_* pk = (_sdrv_pack_*)temp;
+	void* tmp_id = pk->id;
+	int ptr_id = pk->sd_rv_neighbor_id;
+	delete pk;
+	struct ibv_cq *cq = NULL;
+	struct ibv_wc wc;
+	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
+	struct context *ctx = (struct context *)id->context;
+	void *ev_ctx = NULL;
+
+	auto recv_tail = recv_ptrs[ptr_id];
 
 	while (1)
 	{
@@ -301,7 +431,16 @@ static void *poll_cq(void *tmp_id)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				_transport_RDMA(&wc);
+				//_transport_RDMA(&wc);
+				auto _data = recv_transport_RDMA(&wc);
+				if (_data != NULL)
+				{
+					auto new_data_node = new node_item();
+					new_data_node->data_ptr = _data;
+					recv_tail->next = new_data_node;
+					recv_tail = new_data_node;
+				}
+
 			}
 			else
 			{
@@ -312,6 +451,7 @@ static void *poll_cq(void *tmp_id)
 	}
 	return NULL;
 }
+
 static struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -338,8 +478,13 @@ static void build_context(struct rdma_cm_id *id, bool is_server)
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, id));
+		static int index = 0;
+		auto tmp_pack = new _sdrv_pack_();
+		tmp_pack->id = id;
+		tmp_pack->sd_rv_neighbor_id = index;
+		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_recv, tmp_pack));
 		id->context = (void*)s_ctx;
+		index++;
 	}
 }
 
@@ -459,7 +604,39 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	int fd_num = fd_vect.size();
 	rdma_server_establisted = true;
 	msg_struct msg_buf;
-	while (true);
+	std::vector<node_item*> _recv_vec;
+	for (int i = 0; i < 4; ++i)
+	{
+		_recv_vec.push_back(recv_ptrs[i]);
+	}
+
+	std::this_thread::sleep_for(std::chrono::seconds(2));
+	while (true)
+	{
+		for (auto& _rc_header : _recv_vec)
+		{
+			if (!_rc_header)
+			{
+				printf("fatal error : _rc_header can not be empty\n");
+				throw std::runtime_error("_recv_vec header should not be NULL");
+			}
+			if (!_rc_header->next) continue;
+			auto tp_header = _rc_header;
+			_rc_header = tp_header->next;
+			delete tp_header;
+			if (!_rc_header->data_ptr)
+			{
+				printf("fatal error: recv data can not be NULL\n");
+				throw std::runtime_error("_recvd data not be NULL");
+			}
+			received_tensor_entry e;
+			auto& new_msg = _rc_header->data_ptr;
+			show_msg(new_msg);
+			tensor_msg::decode(e, new_msg);
+			insert_to_recv_queue(bgs, e);
+			std::free(_rc_header->data_ptr);
+		}
+	}
 	return;
 }
 #endif
@@ -559,7 +736,16 @@ static void rdma_client_init(bcube_struct& bs)
 				else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
 				{
 					struct context *ctx = (struct context *)event_copy.id->context;
-					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, poll_cq, event_copy.id));
+					static int index = 0;
+					auto tmp_pack = new _sdrv_pack_();
+					tmp_pack->id = event_copy.id;
+					tmp_pack->sd_rv_neighbor_id = index;
+#if HAVE_RDMA
+					bs.topo[lev][bs.neighbor_info[lev][index].node_index].send_ptr = send_ptrs[index];
+					bs.neighbor_info[lev][index].send_ptr = send_ptrs[index];
+#endif
+					index++;
+					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, poll_send, tmp_pack));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 					break;
 				}
@@ -598,6 +784,7 @@ static void rdma_client_init(bcube_struct& bs)
 			bs.topo[lev][bs.neighbor_info[lev][index].node_index].send_rdma_cm_id = conn;
 			bs.neighbor_info[lev][index].send_rdma_event_channel = ec;
 			bs.neighbor_info[lev][index].send_rdma_cm_id = conn;
+
 		}
 	}
 	rdma_client_establisted = true;
@@ -649,7 +836,13 @@ static void set_sock_fd(bcube_struct& bs)
 					for (size_t neigh_index = 0; neigh_index < bs.neighbor_info[lev_index].size(); neigh_index++)
 					{
 						if (each_node.node_id == bs.neighbor_info[lev_index][neigh_index].node_index)
+						{
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
+#if HAVE_RDMA
+							each_node.send_list = bs.neighbor_info[lev_index][neigh_index].send_ptr;
+#endif
+						}
+
 					}
 				}
 			}
@@ -725,7 +918,11 @@ void rdma_bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 	printf("in rdma bcube init...\n");
 	bcube_s.bcube0_size = 3;
 	bcube_s.bcube_level = 2;
-
+	for (int  i = 0; i < PTR_NUM; i++)
+	{
+		send_ptrs[i] = new node_item();
+		recv_ptrs[i] = new node_item();
+	}
 	topology_init(bcube_s);
 	setup_node(bcube_s);
 	rdma_server_init(bcube_s);
@@ -758,96 +955,34 @@ static void show_msg(void* row_data)
 		printf("%d ", ((int*)data)[ii]);
 	printf("\n");
 }
-//extern void show_msg(void*);
-static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
-{
-	msg_struct* tmp_msg = nullptr;
-	auto& tmp_stg = ps[pid];
-	for (auto it : tmp_stg)
-	{
-		int len = 0, res_len = -1;
-		tensor_msg::encode(a_tensor, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
-		show_msg((void*)tmp_msg);
-		res_len = write(it.socket_fd, (void*)(tmp_msg), len);
-		assert(res_len == len);
-		std::free(tmp_msg);
-		//printf("in send_assist_thread : free %p\n", tmp_msg);
-		tmp_msg = nullptr;
-	}
-}
-#include <condition_variable>
-static struct thread_assis
-{
-	std::condition_variable cv;
-	std::mutex send_mutex;
-	tensor_table_entry e;
-	process steps;
-	bool ready = false;
-	std::vector<bool> fin;
-} send_pack;
 
-static bool first_init = true;
 
-static void send_thread(thread_assis& _send_pack, int pid)
-{
-	while (true)
-	{
-		printf("run in send thread\n");
-		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
-		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
-		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
-		_send_pack.fin[pid] = true;
-	}
-
-}
-#include <pthread.h>
-static void* send_thread_2(void* _pid)
-{
-	auto pid = *(int*)_pid;
-	thread_assis& _send_pack = send_pack;
-	while (true)
-	{
-		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
-		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
-		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
-		_send_pack.fin[pid] = true;
-	}
-	return NULL;
-}
-
+/*as for rdma send, just encode all message and append to each list.*/
 void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
 	auto & steps = send_strategy[stage];
-	auto& _send_pack_here = send_pack;
 
-	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
-	if (first_init)
+	for (int process_index = 0; process_index < 2; process_index++)
 	{
-		first_init = false;
-		_send_pack_here.fin.resize(2);
-		for (int nums = 0; nums < 2; nums++)
+		msg_struct* tmp_msg = nullptr;
+		for (auto& it : steps[process_index])
 		{
-			pthread_t id1;
-			if (pthread_create(&id1, NULL, send_thread_2, (void*)&nums) != 0)
-			{
-				printf("error in create thread");
-				while (1);
-			}
-			sleep(2);
+			int len = 0;
+			tensor_msg::encode(e, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
+			//printf("send out: %s,\t send len=%d\n",a_tensor.tensor_name.c_str(),len);
+			show_msg((void*)tmp_msg);
+
+			auto send_node_data = new node_item();
+			send_node_data->data_ptr = (char*)tmp_msg;
+			send_node_data->next = nullptr;
+			it.send_list->next = send_node_data;
+			it.send_list = send_node_data;
+			tmp_msg = nullptr;
 		}
 	}
-	std::unique_lock<std::mutex> send_lock(_send_pack_here.send_mutex);
-	_send_pack_here.steps = steps;
-	_send_pack_here.e = e;
-	_send_pack_here.fin[0] = false;
-	_send_pack_here.fin[1] = false;
-	_send_pack_here.ready = true;
-	_send_pack_here.cv.notify_all();
-	send_lock.unlock();
-	while (_send_pack_here.fin[0] == false || _send_pack_here.fin[1] == false);
-	return;
+	return ;
 }
 
 #endif

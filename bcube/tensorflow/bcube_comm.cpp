@@ -80,7 +80,12 @@ static void setup_node(bcube_struct& bcube_s)
 		std::vector<node> grp;
 		Utils::getOneHopNeighbour(bcube_s.rank, lev, bcube_s.bcube0_size, 1, tmp_neigh);
 		for (int neigh_index = 0; neigh_index < bcube_s.bcube0_size - 1; neigh_index++)
+		{
+			//initialize the node_item
+			bcube_s.topo[lev][tmp_neigh[neigh_index]].send_ptr = new node_item();
+			bcube_s.topo[lev][tmp_neigh[neigh_index]].recv_ptr = new node_item();
 			grp.push_back(bcube_s.topo[lev][tmp_neigh[neigh_index]]);
+		}
 		bcube_s.neighbor_info.push_back(grp);
 		grp.clear();
 		delete[] tmp_neigh;

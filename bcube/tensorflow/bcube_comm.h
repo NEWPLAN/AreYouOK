@@ -22,6 +22,12 @@
 #include "bcube_message.h"
 #include "bcube_rdma.h"
 
+typedef struct _data_list_
+{
+	char* data_ptr = nullptr;
+	struct _data_list_* next = nullptr;
+} node_item;
+
 struct bcube_global_struct;
 struct node
 {
@@ -34,6 +40,7 @@ struct node
 #if HAVE_RDMA
 	struct rdma_cm_id* send_rdma_cm_id;
 	struct rdma_event_channel* send_rdma_event_channel;
+	node_item* send_ptr, recv_ptr;
 #endif
 
 };
@@ -45,6 +52,7 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
+
 } send_to_one;
 
 /*
