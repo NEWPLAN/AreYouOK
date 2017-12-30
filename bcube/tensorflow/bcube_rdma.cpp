@@ -59,6 +59,27 @@ static void rc_die(const char *reason)
 	exit(-1);
 }
 
+static void show_msg(void* row_data)
+{
+	return;
+	msg_struct* msg = (msg_struct*)row_data;
+	printf("msg info:\n");
+	printf("msg_length: %d\n", msg->msg_length);
+	printf("name_length: %d\n", msg->name_len);
+	printf("start position: %d\n", msg->start_pos);
+	printf("msg.data[0]: %c\n", msg->data[0]);
+	char* name = (char*)msg + sizeof(msg_struct);
+	char* data = name + msg->name_len;
+	char tmp = *data;
+	*data = 0;
+	printf("msg_name: %s\n", name);
+	*data = tmp;
+	for (int ii = 0; ii < 3; ii++)
+		printf("%d ", ((int*)data)[ii]);
+	printf("\n");
+}
+
+
 #if HAVE_RDMA
 static void node_counts(bcube_struct& bcube_s)
 {
@@ -942,25 +963,6 @@ void rdma_bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 extern bcube_global_struct bcube_gs;
 
 
-static void show_msg(void* row_data)
-{
-	return;
-	msg_struct* msg = (msg_struct*)row_data;
-	printf("msg info:\n");
-	printf("msg_length: %d\n", msg->msg_length);
-	printf("name_length: %d\n", msg->name_len);
-	printf("start position: %d\n", msg->start_pos);
-	printf("msg.data[0]: %c\n", msg->data[0]);
-	char* name = (char*)msg + sizeof(msg_struct);
-	char* data = name + msg->name_len;
-	char tmp = *data;
-	*data = 0;
-	printf("msg_name: %s\n", name);
-	*data = tmp;
-	for (int ii = 0; ii < 3; ii++)
-		printf("%d ", ((int*)data)[ii]);
-	printf("\n");
-}
 
 
 /*as for rdma send, just encode all message and append to each list.*/

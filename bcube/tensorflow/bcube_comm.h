@@ -53,7 +53,7 @@ typedef struct
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
 #if HAVE_RDMA
-	node_item* send_ptr, recv_ptr;
+	node_item* send_list;
 #endif
 } send_to_one;
 
