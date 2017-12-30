@@ -21,6 +21,7 @@ import shlex
 import subprocess
 import textwrap
 import traceback
+
 from bcube import __version__
 #This version is 0.1
 
@@ -29,7 +30,9 @@ tensorflow_bcube_lib = Extension('bcube.tensorflow.bcube_lib', [])
 os.environ['BCUBE_GPU_ALLREDUCE']='TCP'
 os.environ['BCUBE_GPU_ALLGATHER']='TCP'
 os.environ['BCUBE_GPU_BROADCAST']='TCP'
-
+os.environ['BCUBE_GPU_ALLREDUCE']='RDMA'
+os.environ['BCUBE_GPU_ALLGATHER']='RDMA'
+os.environ['BCUBE_GPU_BROADCAST']='RDMA'
 print(os.environ.get('BCUBE_GPU_ALLREDUCE'))
 print(os.environ.get('BCUBE_GPU_ALLGATHER'))
 print(os.environ.get('BCUBE_GPU_BROADCAST'))
@@ -208,10 +211,62 @@ def get_cuda_dirs(build_ext):
     return cuda_include_dirs, cuda_lib_dirs
 
 
-def get_rdma_dirs(build_ext, cuda_include_dirs, cuda_lib_dirs):
+def get_rdma_dirs(build_ext):
     rdma_include_dirs = []
     rdma_lib_dirs = []
-    return rdma_include_dirs, rdma_lib_dirs
+    rdma_link_flags= []
+    rdma_lib= []
+
+    rdma_home = os.environ.get('BCUBE_RDMA_HOME')
+    if rdma_home:
+        rdma_include_dirs += ['%s/include' % rdma_home]
+        rdma_lib_dirs += ['%s/lib' % rdma_home, '%s/lib64' % rdma_home]
+
+    rdma_include = os.environ.get('BCUBE_RDMA_INCLUDE')
+    if rdma_include:
+        rdma_include_dirs += [rdma_include]
+
+    rdma_lib = os.environ.get('BCUBE_CUDA_LIB')
+    if rdma_lib:
+        rdma_lib_dirs += [rdma_lib]
+    else:
+        rdma_lib =[]
+
+    if not rdma_include_dirs and not rdma_lib_dirs:
+        # default to /usr/local/cuda
+        rdma_include_dirs += ['/usr/src/mlnx-ofed-kernel-4.1/include']
+        rdma_lib_dirs += ['/usr/src/mlnx-ofed-kernel-4.1/lib', '/usr/src/mlnx-ofed-kernel-4.1/lib64']
+        rdma_lib += ['rdmacm','ibverbs']
+
+    try:
+        test_compile(build_ext, 'test_rdma', include_dirs=rdma_include_dirs,
+                     library_dirs=rdma_lib_dirs, libraries=rdma_lib,code=textwrap.dedent('''\
+            #include <rdma/rdma_cma.h>
+            void test() 
+            {
+                char *buffer =NULL;
+                struct ibv_pd * pd = NULL;
+                rdma_create_event_channel();
+                ibv_reg_mr(
+                  pd, 
+                  buffer, 
+                  1024, 
+                  IBV_ACCESS_REMOTE_WRITE);
+            }
+            '''))
+    except (CompileError, LinkError):
+        raise DistutilsPlatformError(
+            'RDMA library was not found (see error above).\n'
+            'Please specify correct RDMA location with the BCUBE_RDMA_HOME '
+            'environment variable or combination of BCUBE_RDMA_INCLUDE and '
+            'BCUBE_RDMA_LIB environment variables.\n\n'
+            'BCUBE_RDMA_HOME - path where RDMA include and lib directories can be found\n'
+            'BCUBE_RDMA_INCLUDE - path to RDMA include directory\n'
+            'BCUBE_RDMA_LIB - path to RDMA lib directory')
+
+    for lib in rdma_lib:
+        rdma_link_flags.append('-l%s' % lib)
+    return rdma_include_dirs, rdma_lib_dirs, rdma_link_flags
 
 
 def fully_define_extension(build_ext):
@@ -243,18 +298,19 @@ def fully_define_extension(build_ext):
 
     if gpu_allreduce == 'RDMA':
         have_rdma = True
-        rdma_include_dirs, rdma_lib_dirs = get_rdma_dirs(
-            build_ext, cuda_include_dirs, cuda_lib_dirs)
+        rdma_include_dirs, rdma_lib_dirs, rdma_link_flags = get_rdma_dirs(build_ext)
     else:
         have_rdma = False
-        rdma_include_dirs = rdma_lib_dirs = []
+        rdma_include_dirs = rdma_lib_dirs = rdma_link_flags = []
 
     MACROS = []
     INCLUDES = []
     SOURCES = ['bcube/tensorflow/bcube_message.cpp',
-				'bcube/tensorflow/bcube_utils.cpp',
+                'bcube/tensorflow/bcube_utils.cpp',
                'bcube/tensorflow/bcube_ops.cpp',
                'bcube/tensorflow/bcube_comm.cpp']
+    if have_rdma:
+        SOURCES+=['bcube/tensorflow/bcube_rdma.cpp']
     #COMPILE_FLAGS = ['-std=c++11', '-fPIC', '-Os'] + tf_compile_flags
     COMPILE_FLAGS = ['-std=c++11'] + tf_compile_flags
     LINK_FLAGS = tf_link_flags
@@ -271,7 +327,8 @@ def fully_define_extension(build_ext):
         MACROS += [('HAVE_RDMA', '1')]
         INCLUDES += rdma_include_dirs
         LIBRARY_DIRS += rdma_lib_dirs
-        LIBRARIES += ['rdma']
+        LINK_FLAGS += rdma_link_flags
+        #LIBRARIES += ['rdma']
 
     if gpu_allreduce:
         MACROS += [('BCUBE_GPU_ALLREDUCE', "'%s'" % gpu_allreduce[0])]
