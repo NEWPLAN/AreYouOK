@@ -15,8 +15,8 @@
 # ==============================================================================
 */
 
-#ifndef __TENSORFLOW_BCUBE_UTILS_H__
-#define __TENSORFLOW_BCUBE_UTILS_H__
+#ifndef UTILS_H
+#define UTILS_H
 #include <cstdio>
 
 #define MAX_N 1000

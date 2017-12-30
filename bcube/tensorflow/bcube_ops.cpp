@@ -51,7 +51,6 @@
 #include <string>
 #include <assert.h>
 #include <cstring>
-#include "bcube_rdma.h"
 #define __BCUBE_DEBUG__
 
 using namespace tensorflow;
@@ -112,11 +111,8 @@ void bg_loops(bcube_global_struct& bgs)
 
 	bcube_init(bgs.bcube_s, bgs);
 	bgs.unfinished_tensor.resize(4);
-
-	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
-	//for debug................................
-	while (true);
 	bgs.is_inited_done = true;
+	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
 	while (!(bgs.shut_down))
 	{
 		bcube_do_steps(bgs);
@@ -173,92 +169,92 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 			{
 				switch (e.tensor_type)
 				{
-					case T_VOID:
-						{
-							perror("error: unknown tensor type(void)\n");
-						}
-						break;
-					case T_BOOL:
-						{
-							perror("error: bool is not ready for scatter and gather\n");
-						}
-						break;
-					case T_UINIT8:
-						{
-							auto add_pos = (uint8_t*)dest_tensor_ptr;
-							auto tensor_ptr = (uint8_t*)(it->receive_ptr);
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_INIT8:
-						{
-							auto add_pos = (int8_t*)dest_tensor_ptr;
-							auto tensor_ptr = (int8_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_UINT16:
-						{
-							auto add_pos = (uint16_t*)dest_tensor_ptr;
-							auto tensor_ptr = (uint16_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_INT16:
-						{
-							auto add_pos = (int16_t*)dest_tensor_ptr;
-							auto tensor_ptr = (int16_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_UINT32:
-						{
-							auto add_pos = (uint32_t*)dest_tensor_ptr;
-							auto tensor_ptr = (uint32_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_INT32:
-						{
-							auto add_pos = (int32_t*)dest_tensor_ptr;
-							auto tensor_ptr = (int32_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_UINT64:
-						{
-							auto add_pos = (uint64_t*)dest_tensor_ptr;
-							auto tensor_ptr = (uint64_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_INT64:
-						{
-							auto add_pos = (int64_t*)dest_tensor_ptr;
-							auto tensor_ptr = (int64_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_FLOAT32:
-						{
-							auto add_pos = (float_t*)dest_tensor_ptr;
-							auto tensor_ptr = (float_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					case T_FLOAT64:
-						{
-							auto add_pos = (double_t*)dest_tensor_ptr;
-							auto tensor_ptr = (double_t*)it->receive_ptr;
-							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
-						}
-						break;
-					default:
-						{
-							printf("unknown type\n");
-							exit(0);
-							break;
-						}
+				case T_VOID:
+				{
+					perror("error: unknown tensor type(void)\n");
+				}
+				break;
+				case T_BOOL:
+				{
+					perror("error: bool is not ready for scatter and gather\n");
+				}
+				break;
+				case T_UINIT8:
+				{
+					auto add_pos = (uint8_t*)dest_tensor_ptr;
+					auto tensor_ptr = (uint8_t*)(it->receive_ptr);
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_INIT8:
+				{
+					auto add_pos = (int8_t*)dest_tensor_ptr;
+					auto tensor_ptr = (int8_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_UINT16:
+				{
+					auto add_pos = (uint16_t*)dest_tensor_ptr;
+					auto tensor_ptr = (uint16_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_INT16:
+				{
+					auto add_pos = (int16_t*)dest_tensor_ptr;
+					auto tensor_ptr = (int16_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_UINT32:
+				{
+					auto add_pos = (uint32_t*)dest_tensor_ptr;
+					auto tensor_ptr = (uint32_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_INT32:
+				{
+					auto add_pos = (int32_t*)dest_tensor_ptr;
+					auto tensor_ptr = (int32_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_UINT64:
+				{
+					auto add_pos = (uint64_t*)dest_tensor_ptr;
+					auto tensor_ptr = (uint64_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_INT64:
+				{
+					auto add_pos = (int64_t*)dest_tensor_ptr;
+					auto tensor_ptr = (int64_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_FLOAT32:
+				{
+					auto add_pos = (float_t*)dest_tensor_ptr;
+					auto tensor_ptr = (float_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				case T_FLOAT64:
+				{
+					auto add_pos = (double_t*)dest_tensor_ptr;
+					auto tensor_ptr = (double_t*)it->receive_ptr;
+					add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+				}
+				break;
+				default:
+				{
+					printf("unknown type\n");
+					exit(0);
+					break;
+				}
 				}
 			}
 			{
@@ -328,153 +324,157 @@ void release_src(tensor_table_entry& e)
 
 	return;
 }
-
+static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
+{
+	//e.callback();
+	printf("%s element: %ld\n",e.tensor_name.c_str(),e.tensor.NumElements());
+}
 static void finished_tensor(tensor_table_entry& e)
 {
 	Status status;
 	switch (e.tensor_ops)
 	{
-		case ALLREDUCE:
-			{
-				/*for cpu*/
+	case ALLREDUCE:
+	{
+		/*for cpu*/
 #if _show_res__
-				static std::atomic_int jjj(1);
-				printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, available_nums : %10d\n",
-				       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.available_nums);
+		static std::atomic_int jjj(1);
+		printf("%d ------finished_tensor(available : %d*%d ,need to be :%ld)------: %-70s, available_nums : %10d\n",
+		       jjj++, e.available_nums, TYPE_SIZE[e.tensor_type], e.output->tensor_data().size(), e.tensor_name.c_str(), e.available_nums);
 #endif
 
 #if HAVE_CUDA
-				if (e.device != CPU_DEVICE_ID)/*for gpu*/
-				{
-					cudaStream_t& stream = bcube_gs.streams[e.device];
-					if (stream == nullptr)
-					{
-						perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
-						e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
-						exit(0);
-					}
-					while (e.ready_event->PollForStatus() ==
-					        perftools::gputools::Event::Status::kPending)
-					{
-						std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-					}
-					check_cuda(e, "memcpy asy from device to host",
-					           cudaMemcpyAsync((void*)(e.output->tensor_data().data()),
-					                           e.tensor_data,
-					                           e.available_nums * TYPE_SIZE[e.tensor_type],
-					                           cudaMemcpyHostToDevice,
-					                           stream));
-				}
-				else
-#endif
-					std::memcpy((void*)(e.output->tensor_data().data()),
-					            e.tensor_data,
-					            e.available_nums * TYPE_SIZE[e.tensor_type]);
-			}
-			break;
-		case ALLGATHER:
+		if (e.device != CPU_DEVICE_ID)/*for gpu*/
+		{
+			cudaStream_t& stream = bcube_gs.streams[e.device];
+			if (stream == nullptr)
 			{
-				if (1)
-				{
-					TensorShape tensor_shape, single_slice_shape;
-					int64_t dims_without_0 = 0;
-					int64_t without_0_size = 1;
-					for (size_t index = 1; index < e.tensor_shape.size(); index++)
-					{
-						single_slice_shape.AddDim(e.tensor_shape[index]);
-						without_0_size += e.tensor_shape[index];
-					}
-					for (auto& res : e.gather_tensor)
-					{
-						dims_without_0 += res.tensor_shape / without_0_size;
-					}
-
-					tensor_shape.AddDim(dims_without_0);
-					tensor_shape.AppendShape(single_slice_shape);
-
-					status = e.context->allocate_output(0, tensor_shape, &e.output);
-					if (!status.ok())
-					{
-						e.callback(status);
-						return;
-					}
-#if HAVE_CUDA
-					// On GPU allocation is asynchronous, we need to wait for it to complete.
-					auto device_context = e.context->op_device_context();
-					if (device_context != nullptr)
-					{
-						device_context->stream()->BlockHostUntilDone();
-					}
-#endif
-				}
-				char* dst_ptr = (char*)(e.output->tensor_data().data());
-				for (auto& _a_ : e.gather_tensor)
-				{
-#if HAVE_CUDA
-					if (e.device != CPU_DEVICE_ID)/*for gpu*/
-					{
-						cudaStream_t& stream = bcube_gs.streams[e.device];
-						if (stream == nullptr)
-						{
-							perror("fatal error in reduce of cuda, as well when we call back. this should never be here\n");
-							e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
-							exit(0);
-						}
-						while (e.ready_event->PollForStatus() ==
-						        perftools::gputools::Event::Status::kPending)
-						{
-							std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-						}
-						check_cuda(e, "memcpy asy from host to device",
-						           cudaMemcpyAsync((void*)(dst_ptr),
-						                           _a_.tensor_ptr,
-						                           _a_.tensor_shape,
-						                           cudaMemcpyHostToDevice,
-						                           stream));
-					}
-					else
-#endif
-						std::memcpy(dst_ptr, _a_.tensor_ptr, _a_.tensor_shape);
-					dst_ptr += _a_.tensor_shape;
-				}
+				perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
+				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
+				exit(0);
 			}
-			break;
-		case BROADCAST:
+			while (e.ready_event->PollForStatus() ==
+			        perftools::gputools::Event::Status::kPending)
 			{
-				static std::atomic_int iiiii(1);
-				printf("%d ------finished_tensor(%ld)------: %-70s, shape : %10d\n", iiiii++, e.output->tensor_data().size(), e.tensor_name.c_str(), e.gather_tensor[0].tensor_shape);
-				//break;
-#if HAVE_CUDA
-				if (e.device != CPU_DEVICE_ID)/*for gpu*/
-				{
-					cudaStream_t& stream = bcube_gs.streams[e.device];
-					if (stream == nullptr)
-					{
-						perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
-						e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
-						exit(0);
-					}
-					while (e.ready_event->PollForStatus() ==
-					        perftools::gputools::Event::Status::kPending)
-					{
-						std::this_thread::sleep_for(std::chrono::nanoseconds(100));
-					}
-					check_cuda(e, "memcpy asy from device to host",
-					           cudaMemcpyAsync((void*)(e.output->tensor_data().data()),
-					                           e.gather_tensor[0].tensor_ptr,
-					                           e.output->tensor_data().size(),
-					                           cudaMemcpyHostToDevice,
-					                           stream));
-				}
-				else
-#endif
-					std::memcpy((void*)(e.output->tensor_data().data()),
-					            e.gather_tensor[0].tensor_ptr,
-					            e.output->tensor_data().size());
+				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 			}
-			break;
-		default:
-			break;
+			check_cuda(e, "memcpy asy from device to host",
+			           cudaMemcpyAsync((void*)(e.output->tensor_data().data()),
+			                           e.tensor_data,
+			                           e.available_nums * TYPE_SIZE[e.tensor_type],
+			                           cudaMemcpyHostToDevice,
+			                           stream));
+		}
+		else
+#endif
+			std::memcpy((void*)(e.output->tensor_data().data()),
+			            e.tensor_data,
+			            e.available_nums * TYPE_SIZE[e.tensor_type]);
+	}
+	break;
+	case ALLGATHER:
+	{
+		if (1)
+		{
+			TensorShape tensor_shape, single_slice_shape;
+			int64_t dims_without_0 = 0;
+			int64_t without_0_size = 1;
+			for (size_t index = 1; index < e.tensor_shape.size(); index++)
+			{
+				single_slice_shape.AddDim(e.tensor_shape[index]);
+				without_0_size += e.tensor_shape[index];
+			}
+			for (auto& res : e.gather_tensor)
+			{
+				dims_without_0 += res.tensor_shape / without_0_size;
+			}
+
+			tensor_shape.AddDim(dims_without_0);
+			tensor_shape.AppendShape(single_slice_shape);
+
+			status = e.context->allocate_output(0, tensor_shape, &e.output);
+			if (!status.ok())
+			{
+				e.callback(status);
+				return;
+			}
+#if HAVE_CUDA
+			// On GPU allocation is asynchronous, we need to wait for it to complete.
+			auto device_context = e.context->op_device_context();
+			if (device_context != nullptr)
+			{
+				device_context->stream()->BlockHostUntilDone();
+			}
+#endif
+		}
+		char* dst_ptr = (char*)(e.output->tensor_data().data());
+		for (auto& _a_ : e.gather_tensor)
+		{
+#if HAVE_CUDA
+			if (e.device != CPU_DEVICE_ID)/*for gpu*/
+			{
+				cudaStream_t& stream = bcube_gs.streams[e.device];
+				if (stream == nullptr)
+				{
+					perror("fatal error in reduce of cuda, as well when we call back. this should never be here\n");
+					e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
+					exit(0);
+				}
+				while (e.ready_event->PollForStatus() ==
+				        perftools::gputools::Event::Status::kPending)
+				{
+					std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+				}
+				check_cuda(e, "memcpy asy from host to device",
+				           cudaMemcpyAsync((void*)(dst_ptr),
+				                           _a_.tensor_ptr,
+				                           _a_.tensor_shape,
+				                           cudaMemcpyHostToDevice,
+				                           stream));
+			}
+			else
+#endif
+				std::memcpy(dst_ptr, _a_.tensor_ptr, _a_.tensor_shape);
+			dst_ptr += _a_.tensor_shape;
+		}
+	}
+	break;
+	case BROADCAST:
+	{
+		static std::atomic_int iiiii(1);
+		printf("%d ------finished_tensor(%ld)------: %-70s, shape : %10d\n", iiiii++, e.output->tensor_data().size(), e.tensor_name.c_str(), e.gather_tensor[0].tensor_shape);
+		//break;
+#if HAVE_CUDA
+		if (e.device != CPU_DEVICE_ID)/*for gpu*/
+		{
+			cudaStream_t& stream = bcube_gs.streams[e.device];
+			if (stream == nullptr)
+			{
+				perror("fatal error in reduce of cuda, as well when we call back.this should never be here\n");
+				e.callback(errors::Unknown(e.tensor_ops, " failed: ", "fatal error in reduce of cuda"));
+				exit(0);
+			}
+			while (e.ready_event->PollForStatus() ==
+			        perftools::gputools::Event::Status::kPending)
+			{
+				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+			}
+			check_cuda(e, "memcpy asy from device to host",
+			           cudaMemcpyAsync((void*)(e.output->tensor_data().data()),
+			                           e.gather_tensor[0].tensor_ptr,
+			                           e.output->tensor_data().size(),
+			                           cudaMemcpyHostToDevice,
+			                           stream));
+		}
+		else
+#endif
+			std::memcpy((void*)(e.output->tensor_data().data()),
+			            e.gather_tensor[0].tensor_ptr,
+			            e.output->tensor_data().size());
+	}
+	break;
+	default:
+		break;
 	}
 	release_src(e);
 #if HAVE_CUDA
@@ -532,11 +532,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
 
-#if HAVE_RDMA
-				bcube_send_by_rdma(*it, bgs.bcube_s, unfin_index + 1);
-#else
 				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
-#endif
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
 			}
@@ -570,11 +566,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				//printf("in allreduce\n");
 				/*send out*/
-#if HAVE_RDMA
-				bcube_send_by_rdma((*it), bgs.bcube_s, 0);
-#else
 				bcube_send((*it), bgs.bcube_s, 0);
-#endif
 				/*move to unfinished vector*/
 				unfin[0].push_back(std::move(*it));
 			}
@@ -582,11 +574,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*enter a gather stage directly*/
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
-#if HAVE_RDMA
-				bcube_send_by_rdma((*it), bgs.bcube_s, unfin_size / 2);
-#else
 				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
-#endif
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else
@@ -602,55 +590,55 @@ Status DataTypeToBcubeType(DataType tf_dtype, BCUBE_TYPE* bcube_dtype)
 {
 	switch (tf_dtype)
 	{
-		case DT_UINT8:
-			{
-				*bcube_dtype = T_UINIT8;
-				return Status::OK();
-			}
-		case DT_INT8:
-			{
-				*bcube_dtype = T_INIT8;
-				return Status::OK();
-			}
-		case DT_UINT16:
-			{
-				*bcube_dtype = T_UINT16;
-				return Status::OK();
-			}
-		case DT_INT16:
-			{
-				*bcube_dtype = T_INT16;
-				return Status::OK();
-			}
-		case DT_INT32:
-			{
-				*bcube_dtype = T_INT32;
-				return Status::OK();
-			}
-		case DT_INT64:
-			{
-				*bcube_dtype = T_INT64;
-				return Status::OK();
-			}
-		case DT_FLOAT:
-			{
-				*bcube_dtype = T_FLOAT32;
-				return Status::OK();
-			}
-		case DT_DOUBLE:
-			{
-				*bcube_dtype = T_FLOAT64;
-				return Status::OK();
-			}
-		case DT_BOOL:
-			{
-				*bcube_dtype = T_BOOL;
-				return Status::OK();
-			}
-		default:
-			{
-				return errors::Internal("Invalid tensor type.");
-			}
+	case DT_UINT8:
+	{
+		*bcube_dtype = T_UINIT8;
+		return Status::OK();
+	}
+	case DT_INT8:
+	{
+		*bcube_dtype = T_INIT8;
+		return Status::OK();
+	}
+	case DT_UINT16:
+	{
+		*bcube_dtype = T_UINT16;
+		return Status::OK();
+	}
+	case DT_INT16:
+	{
+		*bcube_dtype = T_INT16;
+		return Status::OK();
+	}
+	case DT_INT32:
+	{
+		*bcube_dtype = T_INT32;
+		return Status::OK();
+	}
+	case DT_INT64:
+	{
+		*bcube_dtype = T_INT64;
+		return Status::OK();
+	}
+	case DT_FLOAT:
+	{
+		*bcube_dtype = T_FLOAT32;
+		return Status::OK();
+	}
+	case DT_DOUBLE:
+	{
+		*bcube_dtype = T_FLOAT64;
+		return Status::OK();
+	}
+	case DT_BOOL:
+	{
+		*bcube_dtype = T_BOOL;
+		return Status::OK();
+	}
+	default:
+	{
+		return errors::Internal("Invalid tensor type.");
+	}
 	}
 }
 
@@ -684,6 +672,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	e.context = context;
 	e.tensor = tensor;
 	e.output = output;
+    show_tensor(e,ALLREDUCE);
 #if _show_res__
 	printf("allreduce tensor_name is %s\n", e.tensor_name.c_str());
 #endif
@@ -709,7 +698,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 				//printf("Check 4\n");
 				auto res = check_cuda(e, "create cuda stream",
 				                      cudaStreamCreate(&stream));
-				if (res == false)
+				if (res = false)
 				{
 					perror("error in create stream of cuda\n");
 					return;
@@ -804,7 +793,7 @@ void bcube_allgather_queue(OpKernelContext* context, const Tensor& tensor,
 				{
 					auto res = check_cuda(e, "create cuda stream",
 					                      cudaStreamCreate(&stream));
-					if (res == false)
+					if (res = false)
 					{
 						perror("error in create stream of cuda\n");
 						return;
@@ -905,7 +894,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 				{
 					auto res = check_cuda(e, "create cuda stream",
 					                      cudaStreamCreate(&stream));
-					if (res == false)
+					if (res = false)
 					{
 						perror("error in create stream of cuda\n");
 						return;

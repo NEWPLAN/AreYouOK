@@ -14,9 +14,8 @@
 # limitations under the License.
 # ==============================================================================
 */
-#ifndef __TENSOTFLOW_BCBUE_COMM_H__
-#define __TENSOTFLOW_BCBUE_COMM_H__
-
+#ifndef __TENSOTFLOW_BCBUE__
+#define __TENSOTFLOW_BCBUE__
 
 #include <vector>
 #include <string>
@@ -31,12 +30,6 @@ struct node
 	/*below is for server*/
 	std::vector<std::string> myip;
 
-#if HAVE_RDMA
-	struct rdma_cm_id* send_rdma_cm_id;
-	struct rdma_event_channel* send_rdma_event_channel;
-	struct _recv_chain* send_list;
-#endif // HAVE_RDMA
-
 };
 
 typedef struct
@@ -46,14 +39,7 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
-
-#if HAVE_RDMA
-	struct rdma_cm_id* send_rdma_cm_id;
-	struct rdma_event_channel* send_rdma_event_channel;
-	struct _recv_chain* send_list;
-#endif // HAVE_RDMA
-
-} send_to_one;
+}send_to_one;
 
 /*
 D1:node index;
@@ -74,25 +60,18 @@ struct bcube_struct
 	int rank;
 
 	int server_fd;/*server listen fd*/
-	int server_port = 9610; /*public port*/
+	int server_port=9610;/*public port*/
 
 	std::vector<int> recv_fd;/*recv socket fd*/
-	std::vector<std::vector<node>> topo, neighbor_info;
+	std::vector<std::vector<node>> topo,neighbor_info;
 
 	node local_info;/*local server socket, will be free after initilization*/
 
 	std::vector<step> nodes_send_strategy;/*global send strategy*/
 	std::vector<process> my_strategy;/*strategy for current rank*/
-
-#if HAVE_RDMA
-	struct rdma_event_channel *event_channel;
-	struct rdma_cm_id *listener;
-	std::vector<rdma_cm_id*> recv_rdma_cm_id;
-#endif // HAVE_RDMA
 };
 
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
-void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e);
 
 #endif

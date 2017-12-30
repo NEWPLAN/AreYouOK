@@ -39,14 +39,11 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_RDMA
-#include "bcube_rdma.h"
-#endif
 
 
 /*flag indicate background thread status.*/
-std::atomic_bool server_establisted(false);
-std::atomic_bool client_establisted(false);
+static std::atomic_bool server_establisted(false);
+static std::atomic_bool client_establisted(false);
 //static void show_msg(void* row_data);
 
 /* count all nodes N=n^k */
@@ -72,7 +69,7 @@ static void setup_node(bcube_struct& bcube_s)
 	bcube_s.local_info.node_index = bcube_s.rank;
 	for (size_t lev = 0; lev < bcube_s.topo.size(); lev++)/*add myself ip into mynodes*/
 	{
-		std::cout << "neighbour: " << bcube_s.topo[lev][bcube_s.rank].ip << std::endl;
+		std::cout<<"neighbour: "<<bcube_s.topo[lev][bcube_s.rank].ip<<std::endl;
 		bcube_s.local_info.myip.push_back(bcube_s.topo[lev][bcube_s.rank].ip);
 	}
 
@@ -94,27 +91,20 @@ static void setup_node(bcube_struct& bcube_s)
 
 /*default node info*/
 /*
-12.12.10.XXX
-12.12.11.XXX
+192.168.10.XXX
+192.168.11.XXX
 */
 static void topology_init(bcube_struct& bcube_s)
 {
-	printf("constructing a BCube(%d,%d) topology\n", bcube_s.bcube0_size, bcube_s.bcube_level);
+	printf("constructing a BCube(%d,%d) topology\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 	node_counts(bcube_s);
-
-	FILE* fp = NULL;
-
-#if HAVE_RDMA
-	fp = NULL;
-#else
-	fp = fopen("/var/topo.txt", "r");
-#endif
-
-	if (fp == NULL)
+	
+	FILE* fp=fopen("/var/topo.txt","r");
+	if(fp==NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
 		{
-			std::string ip_addr = "12.12.";
+			std::string ip_addr = "192.168.";
 			std::string leve_str = std::to_string((leve + 10));
 			std::vector<node> tp;/*each level*/
 			node tmp_node;
@@ -122,7 +112,7 @@ static void topology_init(bcube_struct& bcube_s)
 
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
-				tmp_node.ip = ip_addr + std::to_string(nodenum + 11);
+				tmp_node.ip = ip_addr + std::to_string(nodenum + 10);
 				tmp_node.node_index = nodenum;
 				tp.push_back(tmp_node);
 			}
@@ -136,13 +126,13 @@ static void topology_init(bcube_struct& bcube_s)
 			std::string ip_addr;
 			std::vector<node> tp;/*each level*/
 			node tmp_node;
-
+			
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
-				char ppp[128] = {0};
-				fscanf(fp, "%s", ppp);
-				ip_addr = ppp;
-				printf("ip: %s\n", ip_addr.c_str());
+				char ppp[128]={0};
+				fscanf(fp,"%s",&ppp);
+				ip_addr=ppp;
+				printf("ip: %s\n",ip_addr.c_str());
 				tmp_node.ip = ip_addr;
 				tmp_node.node_index = nodenum;
 				tp.push_back(tmp_node);
@@ -150,10 +140,10 @@ static void topology_init(bcube_struct& bcube_s)
 			bcube_s.topo.push_back(tp);
 		}
 	}
-	printf("BCube(%d,%d) is constructed done!\n", bcube_s.bcube0_size, bcube_s.bcube_level);
+	printf("BCube(%d,%d) is constructed done!\n",bcube_s.bcube0_size,bcube_s.bcube_level);
 }
 struct bcube_global_struct;
-void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
+static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 {
 	auto& bs = bgs.bcube_s;
 	auto& recv_queue = bgs.receiv_tmp_tensor;
@@ -165,8 +155,7 @@ void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 		auto& vec_msg = it->second;
 		vec_msg.push_back(std::move(rs_e));
 		if (vec_msg.size() == (size_t)(bs.bcube0_size - 1)*bs.bcube_level)
-		{
-			/*if all received done, move tensor to received tensor.*/
+		{/*if all received done, move tensor to received tensor.*/
 			//printf("tensor %s is ready to reduce, move to received tensor buf.\n",it->first.c_str());
 			{
 				std::lock_guard<std::mutex> recv_lock(bgs.tensor_recv_mutex);
@@ -177,7 +166,7 @@ void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 	}
 	else
 	{
-		//printf("%s not exist... create one...\n",name.c_str());
+		//printf("%s not exist... create one...\n",name.c_str());		
 		std::vector<received_tensor_entry> msg_record;
 		//std::this_thread::sleep_for(std::chrono::seconds(1));
 		msg_record.push_back(std::move(rs_e));
@@ -189,17 +178,17 @@ void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 extern void show_msg(void*);
 struct __my_recv_utils
 {
-	int fd;
-	void* data_ptr;
-	void* current_ptr;
-	int left_len;
-	int total_len;
+		int fd;
+		void* data_ptr;
+		void* current_ptr;
+		int left_len;
+		int total_len;
 };
 void recv_loops(bcube_global_struct& bgs)
 {
 	bcube_struct& bs = bgs.bcube_s;
 	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
-	printf("server is inited done, waiting for %d client connecting....:)\n", client_counts);
+	printf("server is inited done, waiting for %d client connecting....:)\n",client_counts);
 	while (client_counts-- > 0)
 	{
 		struct sockaddr_in client_addr;
@@ -213,7 +202,7 @@ void recv_loops(bcube_global_struct& bgs)
 		}
 		fcntl(connected_fd, F_SETFL, fcntl(connected_fd, F_GETFL, 0) | O_NONBLOCK);
 		bs.recv_fd.push_back(connected_fd);
-		printf("client[%s,%d] is connecting now... \n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
+		printf("client[%s,%d] is connecting now... \n", inet_ntoa(client_addr.sin_addr),client_addr.sin_port);
 	}
 	printf("%d clients have connected to my node, ready to receiving loops\n", client_counts);
 
@@ -222,59 +211,59 @@ void recv_loops(bcube_global_struct& bgs)
 	int fd_num = fd_vect.size();
 	server_establisted = true;
 	msg_struct msg_buf;
-
+	
 	std::vector<__my_recv_utils> _recv_vector;
 	for (int fd_index = 0; fd_index < fd_num; fd_index++)
 	{
 		__my_recv_utils _a_recv_entry;
-		_a_recv_entry.fd = fd_vect[fd_index];
-		_a_recv_entry.data_ptr = nullptr;
-		_a_recv_entry.current_ptr = nullptr;
-		_a_recv_entry.left_len = 0;
-		_a_recv_entry.total_len = 0;
+		_a_recv_entry.fd=fd_vect[fd_index];
+		_a_recv_entry.data_ptr=nullptr;
+		_a_recv_entry.current_ptr=nullptr;
+		_a_recv_entry.left_len=0;
+		_a_recv_entry.total_len=0;
 		_recv_vector.push_back(std::move(_a_recv_entry));
 	}
-	while (!(bgs.shut_down))
+	while(!(bgs.shut_down))
 	{
-		for (auto& re : _recv_vector)
+		for(auto& re : _recv_vector)
 		{
-			if (re.total_len == 0)
+			if(re.total_len==0)
 			{
 				memset((void*)(&msg_buf), 0, msg_len);
 				if (recv(re.fd, &msg_buf, msg_len, MSG_PEEK) != msg_len)continue;
 
-				if (re.data_ptr == nullptr)
+				if(re.data_ptr==nullptr)
 				{
-					re.data_ptr = (void*)std::malloc(msg_buf.msg_length);
-					if (re.data_ptr == nullptr)
+					re.data_ptr=(void*)std::malloc(msg_buf.msg_length);
+					if(re.data_ptr==nullptr)
 					{
 						perror("fatal error in malloc ... exit!");
 						exit(0);
 					}
-					re.left_len = msg_buf.msg_length;
-					re.total_len = msg_buf.msg_length;
-					re.current_ptr = re.data_ptr;
+					re.left_len=msg_buf.msg_length;
+					re.total_len=msg_buf.msg_length;
+					re.current_ptr=re.data_ptr;
 				}
 			}
-
-			int recv_nums = recv(re.fd, re.current_ptr, re.left_len, 0);
-			if (recv_nums < 0)continue;
-			re.current_ptr += recv_nums;
-			re.left_len -= recv_nums;
-			if (re.left_len <= 0)
+			
+			int recv_nums=recv(re.fd, re.current_ptr, re.left_len, 0);
+			if(recv_nums<0)continue;
+			re.current_ptr+=recv_nums;
+			re.left_len-=recv_nums;
+			if(re.left_len<=0)
 			{
-				void* new_msg = re.data_ptr;
+				void* new_msg=re.data_ptr;
 				received_tensor_entry e;
 				show_msg(new_msg);
 				tensor_msg::decode(e, new_msg);
 				insert_to_recv_queue(bgs, e);
 				std::free(new_msg);
-				new_msg = nullptr;
+				new_msg=nullptr;
 
-				re.data_ptr = nullptr;
-				re.current_ptr = nullptr;
-				re.left_len = 0;
-				re.total_len = 0;
+				re.data_ptr=nullptr;
+				re.current_ptr=nullptr;
+				re.left_len=0;
+				re.total_len=0;
 			}
 		}
 	}
@@ -285,7 +274,7 @@ extern bcube_global_struct bcube_gs;
 
 static void server_init(bcube_struct& bs)
 {
-	int init_loops = 0;
+	int init_loops=0;
 	struct sockaddr_in sin;
 	printf("init a server....\n");
 	/*alloc a socket_fd and init*/
@@ -296,13 +285,12 @@ static void server_init(bcube_struct& bs)
 	sin.sin_port = htons(bs.server_port);/*server listen public ports*/
 	sin.sin_addr.s_addr = INADDR_ANY;/*listen any connects*/
 
-	while (bind(bs.server_fd, (struct sockaddr*)&sin, sizeof(sin)) < 0)
+	while(bind(bs.server_fd, (struct sockaddr*)&sin, sizeof(sin)) < 0)
 	{
 		std::cerr << "server init failed: error in bind socket, will try it again in 2 seconds..." << std::endl;
-		if (init_loops > 10)
+		if(init_loops>10) 
 		{
 			close(bs.server_fd);
-			printf("error in init socket\n");
 			exit(-1);
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -364,12 +352,12 @@ static void client_init(bcube_struct& bs)
 					connect_count++;
 					if (connect_count > 100 * 600)/*after 600 seconds, it will exit.*/
 					{
-						std::cerr << 600 << "seconds is passed, error in connect to server" << bs.neighbor_info[lev][index].ip << ", check your network condition" << std::endl;
+						std::cerr <<600<< "seconds is passed, error in connect to server"<<bs.neighbor_info[lev][index].ip<<", check your network condition" << std::endl;
 						close(tmp_skfd);
 						exit(0);
 					}
 				}
-				std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
+				std::cout<< local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip<< " , "<< bs.server_port << " ]" << std::endl;
 			}
 			bs.topo[lev][bs.neighbor_info[lev][index].node_index].remote_fd = tmp_skfd;
 			bs.neighbor_info[lev][index].remote_fd = tmp_skfd;
@@ -396,7 +384,7 @@ void show_each_node(bcube_struct& bs, int n)
 					{
 						auto& sends = bs.nodes_send_strategy[node_index][step_index][proc_index];
 						printf("\t\t\tnode%lu--->node%d,with sock:%d, para:", node_index,
-						       sends[send_index].node_id, sends[send_index].socket_fd);
+							sends[send_index].node_id, sends[send_index].socket_fd);
 						for (size_t para_id = 0; para_id < sends[send_index].paraid.size(); para_id++)
 							printf(" %d ", sends[send_index].paraid[para_id]);
 						printf("\n");
@@ -419,7 +407,7 @@ void show_each_node(bcube_struct& bs, int n)
 				{
 					auto& sends = bs.nodes_send_strategy[node_index][step_index][proc_index];
 					printf("\t\t\tnode%d--->node%d, with sockfd:%d, para:", node_index,
-					       sends[send_index].node_id, sends[send_index].socket_fd);
+						sends[send_index].node_id, sends[send_index].socket_fd);
 					for (size_t para_id = 0; para_id < sends[send_index].paraid.size(); para_id++)
 						printf(" %d ", sends[send_index].paraid[para_id]);
 					printf("\n");
@@ -473,12 +461,7 @@ static void set_sock_fd(bcube_struct& bs)
 					for (size_t neigh_index = 0; neigh_index < bs.neighbor_info[lev_index].size(); neigh_index++)
 					{
 						if (each_node.node_id == bs.neighbor_info[lev_index][neigh_index].node_index)
-						{
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
-#if HAVE_RDMA
-							each_node.send_list = bs.neighbor_info[lev_index][neigh_index].send_list;
-#endif
-						}
 					}
 				}
 			}
@@ -544,7 +527,7 @@ static void get_send_strategy(bcube_struct& bs)
 static bool check_bcube_is_inited_done(bcube_struct& bs)
 {
 	std::cout << "check bcube inite status, not yet finished" << std::endl;
-	return server_establisted && client_establisted;
+	return server_establisted&&client_establisted;
 }
 
 static void sig_handler(int sig)
@@ -572,17 +555,11 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 
 	topology_init(bcube_s);
 	setup_node(bcube_s);
-
-#if HAVE_RDMA
-	rdma_all_init(bcube_s);
-#else
 	server_init(bcube_s);
 	client_init(bcube_s);
-#endif
 	get_send_strategy(bcube_s);
 	while (!check_bcube_is_inited_done(bcube_s))
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-	while (true);
 	return;
 }
 
@@ -594,24 +571,24 @@ void show_msg(void* row_data)
 	return;
 	msg_struct* msg = (msg_struct*)row_data;
 	printf("msg info:\n");
-	printf("msg_length: %d\n", msg->msg_length);
-	printf("name_length: %d\n", msg->name_len);
-	printf("start position: %d\n", msg->start_pos);
-	printf("msg.data[0]: %c\n", msg->data[0]);
+	printf("msg_length: %d\n",msg->msg_length);
+	printf("name_length: %d\n",msg->name_len);
+	printf("start position: %d\n",msg->start_pos);
+	printf("msg.data[0]: %c\n",msg->data[0]);
 	char* name = (char*)msg + sizeof(msg_struct);
-	char* data = name + msg->name_len;
+	char* data = name +msg->name_len;
 	char tmp = *data;
 	*data = 0;
 	printf("msg_name: %s\n", name);
 	*data = tmp;
-	if (0)
+	if(0)
 	{
 		for (int ii = 0; ii < 3; ii++)
-			printf("%d ", ((int*)data)[ii]);
+			printf("%d ",((int*)data)[ii]);
 	}
 	printf("\n");
 }
-
+extern void show_msg(void*);
 static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
 {
 	msg_struct* tmp_msg = nullptr;
@@ -624,8 +601,8 @@ static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pi
 		show_msg((void*)tmp_msg);
 		//assert(write(it.socket_fd, (void*)(tmp_msg), len) == len);
 		//assert(send(it.socket_fd, (void*)(tmp_msg), len, 0) == len);
-		size_t numsss = send(it.socket_fd, (void*)(tmp_msg), len, 0);
-		if (numsss != len)
+		size_t numsss=send(it.socket_fd, (void*)(tmp_msg), len, 0);
+		if(numsss!=len)
 		{
 			printf("send error .........................\n");
 			exit(0);
@@ -647,7 +624,7 @@ struct thread_assis
 	std::mutex send_mutex;
 	tensor_table_entry e;
 	process steps;
-	bool ready = false;
+	bool ready=false;
 	std::vector<bool> fin;
 } send_pack;
 
@@ -659,13 +636,13 @@ void send_thread(thread_assis& _send_pack, int pid)
 	{
 		printf("run in send thread\n");
 		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
-		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
-		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
+		while ((!_send_pack.ready)||_send_pack.fin[pid])_send_pack.cv.wait(send_lock);
+		send_assist_thread(_send_pack.e,_send_pack.steps,pid);
 		_send_pack.fin[pid] = true;
 	}
-
+	
 }
-#include <pthread.h>
+#include <pthread.h> 
 void* send_thread_2(void* _pid)
 {
 	auto pid = *(int*)_pid;
@@ -695,7 +672,7 @@ void bcube_send2222(tensor_table_entry& e, bcube_struct& bs, int stage)
 		for (int nums = 0; nums < 2; nums++)
 		{
 			pthread_t id1;
-			if (pthread_create(&id1, NULL, send_thread_2, (void*)&nums) != 0)
+			if (pthread_create(&id1,NULL,send_thread_2,(void*)&nums) != 0)
 			{
 				printf("error in create thread");
 				while (1);
@@ -767,6 +744,8 @@ void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	/*send out...*/
 	return;
 }
+
+
 
 void bcube_test(void)
 {

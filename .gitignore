@@ -1,9 +1,0 @@
-*.py[cod]
-*.so
-*.o
-dist
-build
-*.egg
-*.egg-info
-MNIST-data*
-checkpoints

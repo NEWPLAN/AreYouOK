@@ -88,9 +88,9 @@ def main(_):
     # of all workers when training is started with random weights or restored
     # from a checkpoint.
     hooks = [bq.BroadcastGlobalVariablesHook(0),
-             tf.train.StopAtStepHook(last_step=1000),
+             tf.train.StopAtStepHook(last_step=1),
              tf.train.LoggingTensorHook(tensors={'step': global_step, 'loss': loss},
-                                        every_n_iter=10),
+                                        every_n_iter=1),
              ]
 
     # Pin GPU to be used to process local rank (one GPU per process)
@@ -99,7 +99,7 @@ def main(_):
     #config.gpu_options.visible_device_list = str(bq.local_rank())
 
     # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
-    checkpoint_dir = './checkpoints' if bq.rank() == 0 else None
+    checkpoint_dir = None
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done
