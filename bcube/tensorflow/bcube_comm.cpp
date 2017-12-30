@@ -302,6 +302,7 @@ static void server_init(bcube_struct& bs)
 		if (init_loops > 10)
 		{
 			close(bs.server_fd);
+			printf("error in init socket\n");
 			exit(-1);
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(2));

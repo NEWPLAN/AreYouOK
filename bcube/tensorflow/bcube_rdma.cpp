@@ -18,6 +18,7 @@ extern void show_msg(void*);
 
 void rc_die(const char* reason)
 {
+	printf("in rc die.. %s\n", reason);
 	fprintf(stderr, "%s\n", reason);
 	exit(-1);
 }
@@ -182,13 +183,14 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 				//if (wc.opcode == IBV_WC_RECV)
 				{
 					auto recved_ptr = recv_data(&wc);
-					if (!recved_ptr)continue;
-
-					auto tp_node = new _recv_chain;
-					tp_node->data_ptr = recved_ptr;
-					tp_node->next = NULL;
-					rcv_tail->next = tp_node;
-					rcv_tail = tp_node;
+					if (recved_ptr)
+					{
+						auto tp_node = new _recv_chain;
+						tp_node->data_ptr = recved_ptr;
+						tp_node->next = NULL;
+						rcv_tail->next = tp_node;
+						rcv_tail = tp_node;
+					}
 				}
 			}
 
@@ -199,6 +201,7 @@ void rcv_poll_cq(void *tmp_id, _recv_chain* chain_header)
 			}
 		}
 	}
+	printf("recv poll cq exit now... should never happen\n");
 	return ;
 }
 
@@ -244,7 +247,7 @@ void send_poll_cq(void * tmp_id, _recv_chain* chain_header)
 			}
 		}
 	}
-	printf("fatal: send poll cq error\n");
+	printf("fatal: send poll cq error, should never exit...\n");
 	return ;
 }
 
@@ -404,6 +407,7 @@ static void rdma_recv_loops(bcube_global_struct& bgs)
 	msg_struct msg_buf;
 	while (true)
 	{
+		std::this_thread::sleep_for(std::chrono::seconds(100));
 		for (auto& _rc_header : _recv_vec)
 		{
 			if (!_rc_header)
@@ -454,6 +458,7 @@ static void rdma_server_init(bcube_struct & bs)
 		{
 			rdma_destroy_id(bs.listener);
 			rdma_destroy_event_channel(bs.event_channel);
+			printf("rdma init closed... will exit now...\n");
 			exit(-1);
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -466,6 +471,7 @@ static void rdma_server_init(bcube_struct & bs)
 		std::cerr << "server init failed (RDMA): error in server listening" << std::endl;
 		rdma_destroy_id(bs.listener);
 		rdma_destroy_event_channel(bs.event_channel);
+		printf("rdma will listen error... exit now\n");
 		exit(-1);
 	}
 
