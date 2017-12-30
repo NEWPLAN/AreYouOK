@@ -177,7 +177,7 @@ void recv_loops(bcube_global_struct& bgs)
 	int msg_len = sizeof(msg_struct);
 	auto& fd_vect = bgs.bcube_s.recv_fd;
 	int fd_num = fd_vect.size();
-	server_establisted = true;
+	rdma_server_establisted = true;
 	msg_struct msg_buf;
 	while (true)
 	{
