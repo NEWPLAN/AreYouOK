@@ -313,7 +313,7 @@ static void send_transport_RDMA(struct ibv_wc *wc, node_item** send_header)
 			while ((*send_header)->next == nullptr)
 				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 			auto new_header = (*send_header)->next;
-			delete send_header
+			delete send_header;
 			void* data = new_header->data_ptr;
 			(*send_header) = new_header;
 			if (data)
