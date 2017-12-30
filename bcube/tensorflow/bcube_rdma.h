@@ -39,7 +39,7 @@ struct context
 };
 struct bcube_global_struct;
 struct bcube_struct;
-struct tensor_table_entry;
+#include "bcube_message.h"
 
 void rdma_bcube_init(bcube_struct&, bcube_global_struct&);
 void rdma_bcube_send(tensor_table_entry& , bcube_struct& , int );
