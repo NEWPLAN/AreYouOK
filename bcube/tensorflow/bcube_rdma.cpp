@@ -18,7 +18,7 @@ extern void show_msg(void*);
 
 
 static _recv_chain* all_chains[10] = {NULL};
-static _recv_chain* send_chain[10] = {NULL};
+static _recv_chain* all_send_chains[10] = {NULL};
 void rc_die(const char* reason)
 {
 	printf("in rc die.. %s\n", reason);
@@ -535,7 +535,7 @@ static void rdma_client_init(bcube_struct & bs)
 				{
 					/*here is error*/
 					static int index = 0;
-					send_chain[index] = send_chain;
+					all_send_chains[index] = send_chain;
 					build_connection(event_copy.id, IS_CLIENT, index);
 					index++;
 					on_pre_conn(event_copy.id, IS_CLIENT);
