@@ -46,7 +46,7 @@ static std::atomic_bool rdma_client_establisted(false);
 static void rc_die(const char *reason)
 {
 	extern int errno;
-	fprintf(stderr, "%s\nstderror= %s\n", reason, stderror(errno));
+	fprintf(stderr, "%s\nstrerror= %s\n", reason, strerror(errno));
 	exit(-1);
 }
 
