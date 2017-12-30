@@ -151,67 +151,6 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 	}
 	return;
 }
-extern void show_msg(void*);
-void recv_loops(bcube_global_struct& bgs)
-{
-	bcube_struct& bs = bgs.bcube_s;
-	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
-	printf("server is inited done, waiting for %d client connecting....:)\n", client_counts);
-	while (client_counts-- > 0)
-	{
-		struct sockaddr_in client_addr;
-		int connected_fd, addr_len;
-		addr_len = sizeof(struct sockaddr_in);
-		connected_fd = accept(bs.server_fd, (struct sockaddr*) & (client_addr), (socklen_t*)&addr_len);
-		if (connected_fd == -1)
-		{
-			std::cerr << "error in server accept..." << std::endl;
-			exit(-1);
-		}
-		fcntl(connected_fd, F_SETFL, fcntl(connected_fd, F_GETFL, 0) | O_NONBLOCK);
-		bs.recv_fd.push_back(connected_fd);
-		printf("client[%s,%d] is connecting now... \n", inet_ntoa(client_addr.sin_addr), client_addr.sin_port);
-	}
-	printf("%d clients have connected to my node, ready to receiving loops\n", client_counts);
-
-	int msg_len = sizeof(msg_struct);
-	auto& fd_vect = bgs.bcube_s.recv_fd;
-	int fd_num = fd_vect.size();
-	rdma_server_establisted = true;
-	msg_struct msg_buf;
-	while (true)
-	{
-		for (int fd_index = 0; fd_index < fd_num; fd_index++)
-		{
-			memset((void*)(&msg_buf), 0, msg_len);
-			if (recv(fd_vect[fd_index], &msg_buf, msg_len, MSG_PEEK) != msg_len)continue;
-			else
-			{
-				assert((msg_buf.msg_length >= msg_len) && (msg_buf.data[0] == ','));
-				void* new_msg = (void*)std::malloc(msg_buf.msg_length);
-				assert(new_msg != nullptr);
-				//printf("in receive msg loops: malloc %p\n", new_msg);
-				memset(new_msg, 0, msg_buf.msg_length);
-				if (recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, MSG_PEEK) != msg_buf.msg_length)
-				{
-					;//printf("receive buffer is not ready, continue...\n");
-				}
-				else
-				{
-					assert(recv(fd_vect[fd_index], new_msg, msg_buf.msg_length, 0) == msg_buf.msg_length);
-					received_tensor_entry e;
-					show_msg(new_msg);
-					tensor_msg::decode(e, new_msg);
-					insert_to_recv_queue(bgs, e);
-				}
-				std::free(new_msg);
-				//printf("in receive loops: free %p\n", new_msg);
-				new_msg = nullptr;
-			}
-		}
-	}
-	return;
-}
 
 #ifdef HAVE_RDMA
 static void send_message(struct rdma_cm_id *id)
@@ -800,7 +739,7 @@ void rdma_bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 extern bcube_global_struct bcube_gs;
 
 
-void show_msg(void* row_data)
+static void show_msg(void* row_data)
 {
 	return;
 	msg_struct* msg = (msg_struct*)row_data;
@@ -819,7 +758,7 @@ void show_msg(void* row_data)
 		printf("%d ", ((int*)data)[ii]);
 	printf("\n");
 }
-extern void show_msg(void*);
+//extern void show_msg(void*);
 static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
 {
 	msg_struct* tmp_msg = nullptr;
