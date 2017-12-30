@@ -302,7 +302,7 @@ void build_qp_attr(struct ibv_qp_init_attr * qp_attr, struct rdma_cm_id * id)
 void build_connection(struct rdma_cm_id * id, bool is_server, int index)
 {
 	struct ibv_qp_init_attr qp_attr;
-	build_context(id, is_server, int index);
+	build_context(id, is_server, index);
 	build_qp_attr(&qp_attr, id);
 
 	struct context *ctx = (struct context *)id->context;
