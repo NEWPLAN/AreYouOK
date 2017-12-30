@@ -311,7 +311,7 @@ static void send_transport_RDMA(struct ibv_wc *wc, node_item** send_header)
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
 			while ((*send_header)->next == nullptr)
-std::this_thread: sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 			auto new_header = (*send_header)->next;
 			delete send_header
 			void* data = new_header->data_ptr;
@@ -351,7 +351,7 @@ static void* recv_transport_RDMA(struct ibv_wc *wc)
 		uint32_t size = ntohl(wc->imm_data);
 		//struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		//_data = new char[size];
-		_data = std::malloc(sizeif(char) * size);
+		_data = std::malloc(sizeof(char) * size);
 		std::memcpy(_data, ctx->buffer, size);
 		post_receive_server(id);
 		ctx->msg->id = MSG_READY;
@@ -436,7 +436,7 @@ static void *poll_recv(void *temp)
 				if (_data != NULL)
 				{
 					auto new_data_node = new node_item();
-					new_data_node->data_ptr = _data;
+					new_data_node->data_ptr = (char*)_data;
 					recv_tail->next = new_data_node;
 					recv_tail = new_data_node;
 				}

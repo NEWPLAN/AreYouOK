@@ -52,7 +52,9 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
-
+#if HAVE_RDMA
+	node_item* send_ptr, recv_ptr;
+#endif
 } send_to_one;
 
 /*
