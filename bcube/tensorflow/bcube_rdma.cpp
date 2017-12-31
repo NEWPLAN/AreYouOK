@@ -47,6 +47,7 @@ static std::atomic_bool rdma_client_establisted(false);
 
 static std::mutex rdma_send_mutex;
 static std::mutex rdma_recv_mutex;
+static node_item* out_send_list [20] = {nullptr};
 
 static void rc_die(const char *reason)
 {
@@ -780,8 +781,10 @@ static void rdma_client_init(bcube_struct& bs)
 					struct context *ctx = (struct context *)event_copy.id->context;
 					node_item* nit = get_new_node();
 					_rdma_thread_pack_* rtp = get_new_thread_pack(event_copy.id, nit);
-					bs.neighbor_info[lev][index].send_list = nit;
+					//bs.neighbor_info[lev][index].send_list = nit;
 					bs.topo[0][bs.neighbor_info[lev][index].node_index].send_list = nit;
+					printf("out node id is %d\n", bs.neighbor_info[lev][index].node_index);
+					out_send_list[bs.neighbor_info[lev][index].node_index] = nit;
 					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, (void*)rtp));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 					break;
