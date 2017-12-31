@@ -180,7 +180,7 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 		if (vec_msg.size() == (size_t)(bs.bcube0_size - 1)*bs.bcube_level)
 		{
 			/*if all received done, move tensor to received tensor.*/
-			printf("tensor %s is ready to reduce, move to received tensor buf.\n", it->first.c_str());
+			//printf("tensor %s is ready to reduce, move to received tensor buf.\n", it->first.c_str());
 			{
 				std::lock_guard<std::mutex> recv_lock(bgs.bcube_mutex);
 				bgs.receiv_tensor.emplace(std::make_pair(name, std::move(vec_msg)));
@@ -371,8 +371,8 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		uint32_t size = ntohl(wc->imm_data);
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		static int64_t lpop = 0;
-		if (lpop % 100 == 0)
-			printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
+		//if (lpop % 100 == 0)
+		//printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		_data = (void*)std::malloc(sizeof(char) * size);
