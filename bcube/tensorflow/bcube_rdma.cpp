@@ -769,6 +769,7 @@ static void rdma_client_init(bcube_struct& bs)
 					node_item* nit = get_new_node();
 					_rdma_thread_pack_* rtp = get_new_thread_pack(event_copy.id, nit);
 					bs.neighbor_info[lev][index].send_list = nit;
+					bs.topo[0][bs.neighbor_info[lev][index].node_index].send_list = nit;
 					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, (void*)rtp));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 					break;
@@ -976,10 +977,11 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
 
-			printf("send out: %s,\t send len=%d--------before: %p--new: %p----------\n", e.tensor_name.c_str(), encode_len, to_one_node.send_list, nit);
-
-			to_one_node.send_list->next = nit;
-			to_one_node.send_list = nit;
+			printf("send to node %d: %s,\t send len=%d--------before: %p--new: %p----------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len, bs.topo[0][to_one_node.node_id].send_list, nit);
+			bs.topo[0][to_one_node.node_id].send_list->next = nit;
+			bs.topo[0][to_one_node.node_id].send_list = nit;
+			//to_one_node.send_list->next = nit;
+			//to_one_node.send_list = nit;
 
 
 //			std::free((char*)tmp_msg);
