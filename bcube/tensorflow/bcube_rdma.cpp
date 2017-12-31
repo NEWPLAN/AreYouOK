@@ -630,7 +630,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	{
 #if __RDMA_SLOW__
 		//printf("in recv loops will sleep for 1 seconds\n");
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
 		for (auto& recv_list : recv_chain)
 		{
@@ -643,7 +643,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			if (recv_list->next != nullptr)
 			{
 				//if ((print_loops++ % 100) == 0)
-				printf("------------------------RECV--------------------------\n");
+				//printf("------------------------RECV--------------------------\n");
 
 				//std::free(recv_list->data_ptr); is NULL useless
 				auto free_tmp = recv_list;
@@ -977,7 +977,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
 
-			printf("send to node %d: %s,\t send len=%d--------before: %p--new: %p----------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len, bs.topo[0][to_one_node.node_id].send_list, nit);
+//			printf("send to node %d: %s,\t send len=%d--------before: %p--new: %p----------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len, bs.topo[0][to_one_node.node_id].send_list, nit);
 			bs.topo[0][to_one_node.node_id].send_list->next = nit;
 			bs.topo[0][to_one_node.node_id].send_list = nit;
 			//to_one_node.send_list->next = nit;
