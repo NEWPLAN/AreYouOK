@@ -5,6 +5,20 @@
 #include <pthread.h>
 #if HAVE_RDMA
 #include <rdma/rdma_cma.h>
+
+
+typedef struct _data_list_
+{
+	char* data_ptr;
+	struct _data_list_* next;
+} node_item;
+
+typedef struct _rdma_pack_
+{
+	struct rdma_cm_id* rdma_id;
+	node_item* nit;
+} _rdma_thread_pack_;
+
 enum message_id
 {
 	MSG_INVALID = 0,

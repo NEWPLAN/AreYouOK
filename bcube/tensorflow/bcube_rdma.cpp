@@ -73,6 +73,19 @@ static node_item* get_new_node(void)
 	return nit;
 }
 
+static _rdma_thread_pack_* get_new_thread_pack(struct rdma_cm_id* id, node_item* nit)
+{
+	_rdma_thread_pack_* rtp = (_rdma_thread_pack_*)std::malloc(sizeof(_rdma_thread_pack_));
+	if (rtp == nullptr)
+	{
+		printf("fatal error : malloc _rdma_thread_pack_ error\n");
+		exit(-1);
+	}
+	rtp->rdma_id = id;
+	rtp->nit = nit;
+	return rrp;
+}
+
 /*确定当前bcube所处的节点和信息*/
 static void setup_node(bcube_struct& bcube_s)
 {
@@ -105,8 +118,8 @@ static void setup_node(bcube_struct& bcube_s)
 
 /*加载所有的网络节点*/
 /*
-192.168.10.XXX
-192.168.11.XXX
+12.12.10.XXX
+12.12.11.XXX
 */
 static void topology_init(bcube_struct& bcube_s)
 {
@@ -293,7 +306,7 @@ static void send_by_RDMA(struct ibv_wc *wc)
 	return;
 }
 
-static void recv_by_RDMA(struct ibv_wc *wc)
+static void recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
@@ -304,7 +317,7 @@ static void recv_by_RDMA(struct ibv_wc *wc)
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		static int64_t lpop = 0;
 		//if (lpop % 500 == 0)
-		printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr));
+		printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		post_receive_server(id);
@@ -320,13 +333,17 @@ static void recv_by_RDMA(struct ibv_wc *wc)
 }
 
 
-static void *recv_poll_cq(void *tmp_id)
+static void *recv_poll_cq(void *rtp)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
-	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
+	struct rdma_cm_id *id = ((_rdma_thread_pack_ *)rtp)->rdma_id;
+	node_item* nit = ((_rdma_thread_pack_ *)rtp)->nit;
+
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
+
+	std::free((_rdma_thread_pack_ *)rtp);
 
 	while (1)
 	{
@@ -338,7 +355,7 @@ static void *recv_poll_cq(void *tmp_id)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				recv_by_RDMA(&wc);
+				recv_by_RDMA(&wc, nit);
 			}
 			else
 			{
@@ -392,8 +409,6 @@ static void *send_poll_cq(void *tmp_id)
 
 
 
-
-
 static struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -420,7 +435,8 @@ static void build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, recv_poll_cq, id));
+		_rdma_thread_pack_* rtp = get_new_thread_pack(id, nit);
+		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, recv_poll_cq, (void*)rtp));
 		id->context = (void*)s_ctx;
 	}
 }
@@ -546,6 +562,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	msg_struct msg_buf;
 	while (true)
 	{
+		printf("in recv loops will sleep for 5 seconds\n");
 		std::this_thread::sleep_for(std::chrono::seconds(5));
 		for (auto& recv_list : recv_chain)
 		{
