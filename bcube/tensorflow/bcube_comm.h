@@ -22,6 +22,12 @@
 #include "bcube_message.h"
 #include "bcube_rdma.h"
 
+typedef struct _data_list_
+{
+	char* data_ptr;
+	struct _data_list_* next;
+} node_item;
+
 struct bcube_global_struct;
 struct node
 {

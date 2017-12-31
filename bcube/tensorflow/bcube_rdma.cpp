@@ -60,6 +60,18 @@ static void node_counts(bcube_struct& bcube_s)
 	}
 }
 
+static node_item* get_new_node(void)
+{
+	node_item* nit = std::malloc(sizeof(node_item));
+	if (nit == nullptr)
+	{
+		printf("fatal error : malloc node_item error\n");
+		exit(-1);
+	}
+	nit->next = nit->data_ptr = nullptr;
+	return nit;
+}
+
 /*确定当前bcube所处的节点和信息*/
 static void setup_node(bcube_struct& bcube_s)
 {
@@ -396,7 +408,7 @@ static void build_params(struct rdma_conn_param *params)
 	params->retry_count = 7;
 }
 
-static void build_context(struct rdma_cm_id *id, bool is_server)
+static void build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
 {
 	struct context *s_ctx = (struct context *)malloc(sizeof(struct context));
 	s_ctx->ibv_ctx = id->verbs;
@@ -426,10 +438,10 @@ static void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *i
 	qp_attr->cap.max_recv_sge = 1;
 }
 
-static void build_connection(struct rdma_cm_id *id, bool is_server)
+static void build_connection(struct rdma_cm_id *id, bool is_server, node_item* nit)
 {
 	struct ibv_qp_init_attr qp_attr;
-	build_context(id, is_server);
+	build_context(id, is_server, nit);
 	build_qp_attr(&qp_attr, id);
 
 	struct context *ctx = (struct context *)id->context;
@@ -482,6 +494,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
 	printf("server is inited done (RDMA), waiting for %d client connecting....:)\n", client_counts);
 	build_params(&cm_params);
+	std::vector<node_item*> recv_chain;
 
 	while (rdma_get_cm_event(bs.event_channel, &event) == 0)
 	{
@@ -492,7 +505,9 @@ static void recv_RDMA(bcube_global_struct& bgs)
 
 		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
 		{
-			build_connection(event_copy.id, IS_SERVER);
+			node_item* nit = get_new_node();
+			recv_chain.push_back(nit);
+			build_connection(event_copy.id, IS_SERVER, nit);
 			on_pre_conn(event_copy.id, IS_SERVER);
 			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 		}
@@ -528,7 +543,19 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	int fd_num = fd_vect.size();
 	rdma_server_establisted = true;
 	msg_struct msg_buf;
-	while (true);
+	while (true)
+	{
+		std::this_thread::sleep_for(std::chrono::seconds(5));
+		for (auto& recv_list : recv_chain)
+		{
+			if (recv_list == nullptr)
+			{
+				printf("fatal error in malloc recv_list！！！\n");
+				exit(-1);
+			}
+			printf("recv_list addr : %p\n", recv_list);
+		}
+	}
 	return;
 }
 #endif
@@ -617,7 +644,7 @@ static void rdma_client_init(bcube_struct& bs)
 				rdma_ack_cm_event(event);
 				if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
 				{
-					build_connection(event_copy.id, IS_CLIENT);
+					build_connection(event_copy.id, IS_CLIENT, nullptr);
 					on_pre_conn(event_copy.id, IS_CLIENT);
 					TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
 				}
