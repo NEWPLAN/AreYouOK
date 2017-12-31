@@ -68,7 +68,8 @@ static node_item* get_new_node(void)
 		printf("fatal error : malloc node_item error\n");
 		exit(-1);
 	}
-	nit->next = nit->data_ptr = nullptr;
+	nit->next = nullptr;
+	nit->data_ptr = nullptr;
 	return nit;
 }
 
