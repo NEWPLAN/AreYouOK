@@ -316,6 +316,81 @@ static void *poll_cq(void *tmp_id)
 	}
 	return NULL;
 }
+
+static void *recv_poll_cq(void *tmp_id)
+{
+	struct ibv_cq *cq = NULL;
+	struct ibv_wc wc;
+	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
+	struct context *ctx = (struct context *)id->context;
+	void *ev_ctx = NULL;
+
+	while (1)
+	{
+		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
+		ibv_ack_cq_events(cq, 1);
+		TEST_NZ(ibv_req_notify_cq(cq, 0));
+
+		while (ibv_poll_cq(cq, 1, &wc))
+		{
+			if (wc.status == IBV_WC_SUCCESS)
+			{
+				_transport_RDMA(&wc);
+			}
+			else
+			{
+				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+			}
+		}
+	}
+	return NULL;
+}
+static void *send_poll_cq(void *tmp_id)
+{
+	struct ibv_cq *cq = NULL;
+	struct ibv_wc wc;
+	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
+	struct context *ctx = (struct context *)id->context;
+	void *ev_ctx = NULL;
+
+	while (1)
+	{
+		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
+		ibv_ack_cq_events(cq, 1);
+		TEST_NZ(ibv_req_notify_cq(cq, 0));
+
+		while (ibv_poll_cq(cq, 1, &wc))
+		{
+			if (wc.status == IBV_WC_SUCCESS)
+			{
+				_transport_RDMA(&wc);
+			}
+			else
+			{
+				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
+			}
+		}
+	}
+	return NULL;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 static struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -342,7 +417,7 @@ static void build_context(struct rdma_cm_id *id, bool is_server)
 	id->context = (void*)s_ctx;
 	if (is_server)
 	{
-		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, poll_cq, id));
+		TEST_NZ(pthread_create(&s_ctx->cq_poller_thread, NULL, recv_poll_cq, id));
 		id->context = (void*)s_ctx;
 	}
 }
@@ -563,7 +638,7 @@ static void rdma_client_init(bcube_struct& bs)
 				else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
 				{
 					struct context *ctx = (struct context *)event_copy.id->context;
-					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, poll_cq, event_copy.id));
+					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, event_copy.id));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 					break;
 				}
