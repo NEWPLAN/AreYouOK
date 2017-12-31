@@ -6,7 +6,7 @@
 #include <rdma/rdma_cma.h>
 
 //void rc_die(const char *reason);
-const size_t BUFFER_SIZE = 512 * 1024 * 1024 + 1;
+const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
 #define TIMEOUT_IN_MS 500
 #define TEST_NZ(x) do { if ( (x)) rc_die("error: " #x " failed (returned non-zero)." ); } while (0)
 #define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
@@ -174,7 +174,7 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 	auto it = recv_queue.find(name);
 	if (it != recv_queue.end())/*exist before and insert into.*/
 	{
-		printf("%s exit before, append it behinds, it size is%d\n", name.c_str(), it->second.size());
+		//printf("%s exit before, append it behinds, it size is %d\n", name.c_str(), it->second.size());
 		auto& vec_msg = it->second;
 		vec_msg.push_back(std::move(rs_e));
 		if (vec_msg.size() == (size_t)(bs.bcube0_size - 1)*bs.bcube_level)
