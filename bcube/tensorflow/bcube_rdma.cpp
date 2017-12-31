@@ -609,8 +609,8 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	while (true)
 	{
 #if __RDMA_SLOW__
-		printf("in recv loops will sleep for 5 seconds\n");
-		std::this_thread::sleep_for(std::chrono::seconds(5));
+		printf("in recv loops will sleep for 1 seconds\n");
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 #endif
 		for (auto& recv_list : recv_chain)
 		{
@@ -634,7 +634,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				{
 					//here is insert into recv_tensor.
 					msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
-					printf("recv_msg info:\n");
+					printf("\n\nrecv_msg info:\n");
 					printf("msg_length: %d\n", msg->msg_length);
 					printf("name_length: %d\n", msg->name_len);
 					printf("start position: %d\n", msg->start_pos);
