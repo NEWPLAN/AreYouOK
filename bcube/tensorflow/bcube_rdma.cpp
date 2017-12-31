@@ -246,8 +246,8 @@ static void _transport_RDMA(struct ibv_wc *wc)
 		uint32_t size = ntohl(wc->imm_data);
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		static int64_t lpop = 0;
-		if (lpop % 500 == 0)
-			printf("received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", size, inet_ntoa(client_addr->sin_addr));
+		//if (lpop % 500 == 0)
+		printf("received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", size, inet_ntoa(client_addr->sin_addr));
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		post_receive_server(id);
