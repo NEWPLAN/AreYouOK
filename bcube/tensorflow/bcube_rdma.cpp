@@ -827,96 +827,33 @@ static void show_msg(void* row_data)
 		printf("%d ", ((int*)data)[ii]);
 	printf("\n");
 }
-//extern void show_msg(void*);
-static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
-{
-	msg_struct* tmp_msg = nullptr;
-	auto& tmp_stg = ps[pid];
-	for (auto it : tmp_stg)
-	{
-		int len = 0, res_len = -1;
-		tensor_msg::encode(a_tensor, (void**)&tmp_msg, it.paraid[0], it.block_num, &len);
-		show_msg((void*)tmp_msg);
-		res_len = write(it.socket_fd, (void*)(tmp_msg), len);
-		assert(res_len == len);
-		std::free(tmp_msg);
-		//printf("in send_assist_thread : free %p\n", tmp_msg);
-		tmp_msg = nullptr;
-	}
-}
-#include <condition_variable>
-static struct thread_assis
-{
-	std::condition_variable cv;
-	std::mutex send_mutex;
-	tensor_table_entry e;
-	process steps;
-	bool ready = false;
-	std::vector<bool> fin;
-} send_pack;
 
-static bool first_init = true;
-
-static void send_thread(thread_assis& _send_pack, int pid)
-{
-	while (true)
-	{
-		printf("run in send thread\n");
-		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
-		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
-		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
-		_send_pack.fin[pid] = true;
-	}
-
-}
-#include <pthread.h>
-static void* send_thread_2(void* _pid)
-{
-	auto pid = *(int*)_pid;
-	thread_assis& _send_pack = send_pack;
-	while (true)
-	{
-		std::unique_lock<std::mutex> send_lock(_send_pack.send_mutex);
-		while ((!_send_pack.ready) || _send_pack.fin[pid])_send_pack.cv.wait(send_lock);
-		send_assist_thread(_send_pack.e, _send_pack.steps, pid);
-		_send_pack.fin[pid] = true;
-	}
-	return NULL;
-}
 
 void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 {
 	auto& send_strategy = bs.my_strategy;
 	assert((size_t)stage < send_strategy.size());
 	auto & steps = send_strategy[stage];
-	auto& _send_pack_here = send_pack;
 
-	//std::cout<<"current send is belong to stage "<<stage<<std::endl;
-	if (first_init)
+	for (auto& link_proc : steps)
 	{
-		first_init = false;
-		_send_pack_here.fin.resize(2);
-		for (int nums = 0; nums < 2; nums++)
+		msg_struct* tmp_msg = nullptr;
+		for (auto& to_one_node : link_proc)
 		{
-			pthread_t id1;
-			if (pthread_create(&id1, NULL, send_thread_2, (void*)&nums) != 0)
-			{
-				printf("error in create thread");
-				while (1);
-			}
-			sleep(2);
+			int encode_len = 0;
+			tensor_msg::encode(e, (void**)&tmp_msg, to_one_node.paraid[0], to_one_node.block_num, &encode_len);
+			show_msg((void*)tmp_msg);
+			printf("send out: %s,\t send len=%d\n", e.tensor_name.c_str(), encode_len);
+			/*
+			append to each node list here...
+			*/
+
+			std::free((char*)tmp_msg);
+			tmp_msg = nullptr;
 		}
 	}
-	std::unique_lock<std::mutex> send_lock(_send_pack_here.send_mutex);
-	_send_pack_here.steps = steps;
-	_send_pack_here.e = e;
-	_send_pack_here.fin[0] = false;
-	_send_pack_here.fin[1] = false;
-	_send_pack_here.ready = true;
-	_send_pack_here.cv.notify_all();
-	send_lock.unlock();
-	while (_send_pack_here.fin[0] == false || _send_pack_here.fin[1] == false);
-	return;
+
+
 }
 
 #endif
