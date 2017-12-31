@@ -293,7 +293,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-#if __RDMA_SLOW__
+#if __RDMA_SLOW__send
 			printf("thread %ld will send data %lp in 1 seconds\n", pthread_self(), nit);
 
 			std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -301,7 +301,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 
 #if _SEND_REAL_DATA_
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::seconds(10));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
@@ -320,13 +320,13 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-#if __RDMA_SLOW__
+#if __RDMA_SLOW__send
 			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 #endif
 #if _SEND_REAL_DATA_
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
@@ -624,6 +624,20 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			{
 				if ((print_loops++ % 100) == 0)
 					printf("------------------------RECV--------------------------\n");
+				{
+					msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
+					printf("recv_msg info:\n");
+					printf("msg_length: %d\n", msg->msg_length);
+					printf("name_length: %d\n", msg->name_len);
+					printf("start position: %d\n", msg->start_pos);
+					printf("msg.data[0]: %c\n", msg->data[0]);
+					char* name = (char*)msg + sizeof(msg_struct);
+					char* data = name + msg->name_len;
+					char tmp = *data;
+					*data = 0;
+					printf("msg_name: %s\n", name);
+					*data = tmp;
+				}
 				std::free(recv_list->data_ptr);
 				auto free_tmp = recv_list;
 				recv_list = recv_list->next;
