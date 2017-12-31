@@ -284,6 +284,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__
 			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
+
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 #endif
 			__send_str = data_gene(1024 * 1024 * 100);
