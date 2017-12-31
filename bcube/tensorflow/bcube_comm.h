@@ -36,6 +36,7 @@ struct node
 #if HAVE_RDMA
 	struct rdma_cm_id* send_rdma_cm_id;
 	struct rdma_event_channel* send_rdma_event_channel;
+	node_item* send_list;
 #endif
 
 };
@@ -47,6 +48,9 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
+#if HAVE_RDMA
+	node_item* send_list;
+#endif
 } send_to_one;
 
 /*

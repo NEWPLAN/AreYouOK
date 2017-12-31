@@ -1,5 +1,7 @@
 #include "bcube_rdma.h"
 
+#define __RDMA_SLOW__ 1
+
 #if HAVE_RDMA
 #include <rdma/rdma_cma.h>
 
@@ -262,7 +264,7 @@ static char* data_gene(int size)
 }
 
 static char* __send_str = NULL;
-static void send_by_RDMA(struct ibv_wc *wc)
+static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
@@ -281,7 +283,7 @@ static void send_by_RDMA(struct ibv_wc *wc)
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__
-			printf("thread %ld will send data in 10 seconds\n", pthread_self());
+			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 #endif
 			__send_str = data_gene(1024 * 1024 * 100);
@@ -291,20 +293,20 @@ static void send_by_RDMA(struct ibv_wc *wc)
 		{
 			printf("received DONE, disconnecting\n");
 			rdma_disconnect(id);
-			return;
+			return nit;
 		}
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__
-			printf("thread %ld will send data in 10 seconds\n", pthread_self());
+			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 #endif
 			send_tensor(id, NULL, strlen(__send_str));
 		}
 		post_receive_client(id);
 	}
-	return;
+	return nit;
 }
 
 static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
@@ -383,11 +385,13 @@ static void *recv_poll_cq(void *rtp)
 	}
 	return NULL;
 }
-static void *send_poll_cq(void *tmp_id)
+static void *send_poll_cq(void *rtp)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
-	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
+	struct rdma_cm_id *id = ((_rdma_thread_pack_ *)rtp)->rdma_id;
+	node_item* nit = ((_rdma_thread_pack_ *)rtp)->nit;
+
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
 
@@ -401,7 +405,7 @@ static void *send_poll_cq(void *tmp_id)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				send_by_RDMA(&wc);
+				nit = send_by_RDMA(&wc, nit);
 			}
 			else
 			{
@@ -697,7 +701,10 @@ static void rdma_client_init(bcube_struct& bs)
 				else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
 				{
 					struct context *ctx = (struct context *)event_copy.id->context;
-					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, event_copy.id));
+					node_item* nit = get_new_node();
+					_rdma_thread_pack_* rtp = get_new_thread_pack(event_copy.id, nit);
+					bs.neighbor_info[lev][index].send_list = nit;
+					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, (void*)rtp));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 					break;
 				}
@@ -787,7 +794,12 @@ static void set_sock_fd(bcube_struct& bs)
 					for (size_t neigh_index = 0; neigh_index < bs.neighbor_info[lev_index].size(); neigh_index++)
 					{
 						if (each_node.node_id == bs.neighbor_info[lev_index][neigh_index].node_index)
+						{
+#if HAVE_RDMA
+							each_node.send_list = bs.neighbor_info[lev_index][neigh_index].send_list;
+#endif
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
+						}
 					}
 				}
 			}
@@ -912,11 +924,18 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			int encode_len = 0;
 			tensor_msg::encode(e, (void**)&tmp_msg, to_one_node.paraid[0], to_one_node.block_num, &encode_len);
 			show_msg((void*)tmp_msg);
-			printf("send out: %s,\t send len=%d\n", e.tensor_name.c_str(), encode_len);
 
 			/*
 			append to each node list here...
 			*/
+			node_item* nit = get_new_node();
+			nit->data_ptr = (char*)tmp_msg;
+
+			printf("send out: %s,\t send len=%d--------before: %p--new: %p----------\n", e.tensor_name.c_str(), encode_len, it.send_list, nit);
+
+			it.send_list->next = nit;
+			it.send_list = nit;
+
 
 			std::free((char*)tmp_msg);
 			tmp_msg = nullptr;
