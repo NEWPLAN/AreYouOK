@@ -77,23 +77,6 @@ inline bool check_cuda(tensor_table_entry& e, std::string op_name, cudaError_t r
 	return true;
 }
 
-#define CUDA_CHECK(entries, op_name, op)									\
-		{																	\
-			auto cuda_result = (op);										\
-			if (cuda_result != cudaSuccess)									\
-			{																\
-				for (auto it = entries.begin(); it != entries.end(); it++) 	\
-				{															\
-					it->callback(errors::Unknown(                           \
-					op_name, " failed: ", cudaGetErrorString(cuda_result)));\
-				}                                                           \
-				return;                                                     \
-			}                                                               \
-		}
-
-#endif
-
-
 static  int TYPE_SIZE[] =
 {
 	4,				sizeof(bool),
