@@ -45,6 +45,9 @@ const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
 static std::atomic_bool rdma_server_establisted(false);
 static std::atomic_bool rdma_client_establisted(false);
 
+static std::mutex rdma_send_mutex;
+static std::mutex rdma_recv_mutex;
+
 static void rc_die(const char *reason)
 {
 	extern int errno;
@@ -325,9 +328,14 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 
 			while (nit->next == nullptr)
 				std::this_thread::sleep_for(std::chrono::seconds(1));
-			node_item* next_node = nit->next;
-			std::free(nit);
-			nit = next_node;
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			node_item* free_tp_node;
+			{
+				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
+				free_tp_node = nit;
+				nit = nit->next;
+			}
+			std::free(free_tp_node);
 			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
 
 		}
@@ -343,9 +351,19 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 
 			while (nit->next == nullptr)
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			node_item* next_node = nit->next;
-			std::free(nit);
-			nit = next_node;
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			node_item* free_tp_node;
+			{
+				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
+				free_tp_node = nit;
+				nit = nit->next;
+			}
+			std::free(free_tp_node);
+
+			//node_item* next_node = nit->next;
+			//std::free(nit);
+			//nit = next_node;
 			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
 
 		}
@@ -973,8 +991,13 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			tmp_msg->rank = to_one_node.node_id;
 
 			printf("append to list will send to %d: %s,\t send len=%d--------\n", tmp_msg->rank, e.tensor_name.c_str(), encode_len);
-			bs.topo[0][to_one_node.node_id].send_list->next = nit;
-			bs.topo[0][to_one_node.node_id].send_list = nit;
+
+			{
+				std::lock_guard<std::mutex> append_lock(rdma_send_mutex);
+				bs.topo[0][to_one_node.node_id].send_list->next = nit;
+				bs.topo[0][to_one_node.node_id].send_list = nit;
+			}
+
 			//to_one_node.send_list->next = nit;
 			//to_one_node.send_list = nit;
 
