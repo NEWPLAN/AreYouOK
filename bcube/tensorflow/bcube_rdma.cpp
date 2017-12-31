@@ -305,7 +305,7 @@ static void *unused_poll_cq(void *tmp_id)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				_transport_RDMA(&wc);
+				unused_transport_RDMA(&wc);
 			}
 			else
 			{
