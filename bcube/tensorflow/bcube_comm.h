@@ -14,13 +14,13 @@
 # limitations under the License.
 # ==============================================================================
 */
-#ifndef __TENSOTFLOW_BCBUE_COMM_H__
-#define __TENSOTFLOW_BCBUE_COMM_H__
-
+#ifndef __TENSOTFLOW_BCBUE__
+#define __TENSOTFLOW_BCBUE__
 
 #include <vector>
 #include <string>
 #include "bcube_message.h"
+#include "bcube_rdma.h"
 
 struct bcube_global_struct;
 struct node
@@ -34,8 +34,7 @@ struct node
 #if HAVE_RDMA
 	struct rdma_cm_id* send_rdma_cm_id;
 	struct rdma_event_channel* send_rdma_event_channel;
-	struct _recv_chain* send_list;
-#endif // HAVE_RDMA
+#endif
 
 };
 
@@ -46,13 +45,6 @@ typedef struct
 	int block_num;/*block nums should be send once*/
 	int block_size;/*each block size*/
 	std::vector<int> paraid;
-
-#if HAVE_RDMA
-	struct rdma_cm_id* send_rdma_cm_id;
-	struct rdma_event_channel* send_rdma_event_channel;
-	struct _recv_chain* send_list;
-#endif // HAVE_RDMA
-
 } send_to_one;
 
 /*
@@ -88,11 +80,11 @@ struct bcube_struct
 	struct rdma_event_channel *event_channel;
 	struct rdma_cm_id *listener;
 	std::vector<rdma_cm_id*> recv_rdma_cm_id;
-#endif // HAVE_RDMA
+#endif
+
 };
 
 void bcube_init(bcube_struct&, bcube_global_struct&);
 void bcube_send(tensor_table_entry& , bcube_struct& , int );
-void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e);
 
 #endif

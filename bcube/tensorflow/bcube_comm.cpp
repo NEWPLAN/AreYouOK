@@ -39,14 +39,11 @@
 #include <pthread.h>
 #include <signal.h>
 
-#if HAVE_RDMA
-#include "bcube_rdma.h"
-#endif
 
 
 /*flag indicate background thread status.*/
-std::atomic_bool server_establisted(false);
-std::atomic_bool client_establisted(false);
+static std::atomic_bool server_establisted(false);
+static std::atomic_bool client_establisted(false);
 //static void show_msg(void* row_data);
 
 /* count all nodes N=n^k */
@@ -101,15 +98,12 @@ static void topology_init(bcube_struct& bcube_s)
 {
 	printf("constructing a BCube(%d,%d) topology\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 	node_counts(bcube_s);
-
 	FILE* fp = NULL;
-
 #if HAVE_RDMA
 	fp = NULL;
 #else
 	fp = fopen("/var/topo.txt", "r");
 #endif
-
 	if (fp == NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
@@ -140,7 +134,7 @@ static void topology_init(bcube_struct& bcube_s)
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
 				char ppp[128] = {0};
-				fscanf(fp, "%s", ppp);
+				fscanf(fp, "%s", &ppp);
 				ip_addr = ppp;
 				printf("ip: %s\n", ip_addr.c_str());
 				tmp_node.ip = ip_addr;
@@ -153,7 +147,7 @@ static void topology_init(bcube_struct& bcube_s)
 	printf("BCube(%d,%d) is constructed done!\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 }
 struct bcube_global_struct;
-void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
+static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 {
 	auto& bs = bgs.bcube_s;
 	auto& recv_queue = bgs.receiv_tmp_tensor;
@@ -302,7 +296,6 @@ static void server_init(bcube_struct& bs)
 		if (init_loops > 10)
 		{
 			close(bs.server_fd);
-			printf("error in init socket\n");
 			exit(-1);
 		}
 		std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -473,12 +466,7 @@ static void set_sock_fd(bcube_struct& bs)
 					for (size_t neigh_index = 0; neigh_index < bs.neighbor_info[lev_index].size(); neigh_index++)
 					{
 						if (each_node.node_id == bs.neighbor_info[lev_index][neigh_index].node_index)
-						{
 							each_node.socket_fd = bs.neighbor_info[lev_index][neigh_index].remote_fd;
-#if HAVE_RDMA
-							each_node.send_list = bs.neighbor_info[lev_index][neigh_index].send_list;
-#endif
-						}
 					}
 				}
 			}
@@ -572,17 +560,11 @@ void bcube_init(bcube_struct& bcube_s, bcube_global_struct& bgs)
 
 	topology_init(bcube_s);
 	setup_node(bcube_s);
-
-#if HAVE_RDMA
-	rdma_all_init(bcube_s);
-#else
 	server_init(bcube_s);
 	client_init(bcube_s);
-#endif
 	get_send_strategy(bcube_s);
 	while (!check_bcube_is_inited_done(bcube_s))
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-	while (true);
 	return;
 }
 
@@ -611,7 +593,7 @@ void show_msg(void* row_data)
 	}
 	printf("\n");
 }
-
+extern void show_msg(void*);
 static void send_assist_thread(tensor_table_entry& a_tensor, process& ps, int pid)
 {
 	msg_struct* tmp_msg = nullptr;
@@ -767,6 +749,8 @@ void bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 	/*send out...*/
 	return;
 }
+
+
 
 void bcube_test(void)
 {

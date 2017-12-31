@@ -77,7 +77,7 @@ struct bcube_global_struct
 	// stream. However, the allreduce and allgather require doing memory copies
 	// and kernel executions (for accumulation of values on the GPU). However,
 	// the subsequent operations must wait for those operations to complete,
-	// otherwise bgloop (which uses its own stream internally) will begin the data
+	// otherwise MPI (which uses its own stream internally) will begin the data
 	// transfers before the CUDA calls are complete. In order to wait for those
 	// CUDA operations, if we were using the TensorFlow stream, we would have to
 	// synchronize that stream; however, other TensorFlow threads may be

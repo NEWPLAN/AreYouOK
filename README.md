@@ -8,6 +8,9 @@ install:
 
 firstly, if you have a cuda environment, you need to enable HAVE_CUDA
 
+if you have a RDMA and InfiniBand environment, you should enable HAVE_RDMA, by setup your compile flags.
+    for example you can add a os.env['BCUBE_GPU_BROADCAST']='RDMA' to trige this switch.
+
 then run command like 
 python setup.py build && sudo python setup.py install
 
@@ -26,4 +29,5 @@ python examples/tensorflow_mnist.py
 
 
 NEWPLAN
+
 2017.12.6

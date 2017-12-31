@@ -51,7 +51,6 @@
 #include <string>
 #include <assert.h>
 #include <cstring>
-#include "bcube_rdma.h"
 #define __BCUBE_DEBUG__
 
 using namespace tensorflow;
@@ -109,14 +108,19 @@ static  int TYPE_SIZE[] =
 void bcube_do_steps(bcube_global_struct&);
 void bg_loops(bcube_global_struct& bgs)
 {
-
+#if HAVE_RDMA
+	rdma_bcube_init(bgs.bcube_s, bgs);
+#else
 	bcube_init(bgs.bcube_s, bgs);
+#endif
 	bgs.unfinished_tensor.resize(4);
-
-	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
-	//for debug................................
-	while (true);
 	bgs.is_inited_done = true;
+	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
+	while (true)
+	{
+		std::cout << "will block here ..." << std::endl;
+		std::this_thread::sleep_for(std::chrono::seconds(100));
+	}
 	while (!(bgs.shut_down))
 	{
 		bcube_do_steps(bgs);
@@ -328,7 +332,12 @@ void release_src(tensor_table_entry& e)
 
 	return;
 }
-
+static void show_tensor(tensor_table_entry& e, int status = ALLREDUCE)
+{
+	return;
+	//e.callback();
+	printf("%s element: %ld\n", e.tensor_name.c_str(), e.tensor.NumElements());
+}
 static void finished_tensor(tensor_table_entry& e)
 {
 	Status status;
@@ -532,11 +541,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
 
-#if HAVE_RDMA
-				bcube_send_by_rdma(*it, bgs.bcube_s, unfin_index + 1);
-#else
 				bcube_send(*it, bgs.bcube_s, unfin_index + 1);
-#endif
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
 			}
@@ -570,11 +575,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				//printf("in allreduce\n");
 				/*send out*/
-#if HAVE_RDMA
-				bcube_send_by_rdma((*it), bgs.bcube_s, 0);
-#else
 				bcube_send((*it), bgs.bcube_s, 0);
-#endif
 				/*move to unfinished vector*/
 				unfin[0].push_back(std::move(*it));
 			}
@@ -582,11 +583,7 @@ void bcube_do_steps(bcube_global_struct& bgs)
 			{
 				/*enter a gather stage directly*/
 				//printf("in allgather or broadcast, enter stage %d\n", unfin_size / 2);
-#if HAVE_RDMA
-				bcube_send_by_rdma((*it), bgs.bcube_s, unfin_size / 2);
-#else
 				bcube_send((*it), bgs.bcube_s, unfin_size / 2);
-#endif
 				unfin[unfin_size / 2].push_back(std::move(*it));
 			}
 			else
@@ -684,6 +681,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	e.context = context;
 	e.tensor = tensor;
 	e.output = output;
+	show_tensor(e, ALLREDUCE);
 #if _show_res__
 	printf("allreduce tensor_name is %s\n", e.tensor_name.c_str());
 #endif
