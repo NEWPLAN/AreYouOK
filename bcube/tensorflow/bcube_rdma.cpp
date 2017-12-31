@@ -306,10 +306,11 @@ static void send_by_RDMA(struct ibv_wc *wc)
 	return;
 }
 
-static void recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
+static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
+	void* _data = nullptr;
 
 	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
 	{
@@ -320,6 +321,14 @@ static void recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
+		_data = (void*)std::malloc(sizeof(char) * size);
+		if (_data == nullptr)
+		{
+			printf("fatal error in recv data malloc!!!!\n");
+			exit(-1);
+		}
+		std::memcpy(_data, ctx->buffer, size);
+
 		post_receive_server(id);
 		ctx->msg->id = MSG_READY;
 		send_message(id);
@@ -329,7 +338,7 @@ static void recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		printf("recv thread %ld will never be here!!!!!\n", pthread_self());
 		exit(0);
 	}
-	return;
+	return _data;
 }
 
 
@@ -345,7 +354,7 @@ static void *recv_poll_cq(void *rtp)
 
 	std::free((_rdma_thread_pack_ *)rtp);
 
-	while (1)
+	while (true)
 	{
 		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
 		ibv_ack_cq_events(cq, 1);
@@ -355,7 +364,14 @@ static void *recv_poll_cq(void *rtp)
 		{
 			if (wc.status == IBV_WC_SUCCESS)
 			{
-				recv_by_RDMA(&wc, nit);
+				void* recv_data = recv_by_RDMA(&wc, nit);
+				if (recv_data != nullptr)//received data, will append to recv_chain...
+				{
+					auto new_node = get_new_node();
+					new_node->data_ptr = (char*)recv_data;
+					nit->next = new_node;
+					nit = new_node;
+				}
 			}
 			else
 			{
@@ -395,13 +411,6 @@ static void *send_poll_cq(void *tmp_id)
 	}
 	return NULL;
 }
-
-
-
-
-
-
-
 
 
 
@@ -572,8 +581,17 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				exit(-1);
 			}
 			printf("recv_list addr : %p\n", recv_list);
+			if (recv_list->next != nullptr)
+			{
+				std::free(recv_list->data_ptr);
+				auto free_tmp = recv_list;
+				recv_list = recv_list->next;
+				std::free(free_tmp);
+				free_tmp = nullptr;
+			}
 		}
 	}
+	printf("RDMA recv loops exit now...\n");
 	return;
 }
 #endif
@@ -889,6 +907,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			tensor_msg::encode(e, (void**)&tmp_msg, to_one_node.paraid[0], to_one_node.block_num, &encode_len);
 			show_msg((void*)tmp_msg);
 			printf("send out: %s,\t send len=%d\n", e.tensor_name.c_str(), encode_len);
+
 			/*
 			append to each node list here...
 			*/
