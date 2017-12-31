@@ -174,13 +174,13 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 	auto it = recv_queue.find(name);
 	if (it != recv_queue.end())/*exist before and insert into.*/
 	{
-		//printf("%s exit before, append it behinds, it size is%d\n",name.c_str(),it->second.size());
+		printf("%s exit before, append it behinds, it size is%d\n", name.c_str(), it->second.size());
 		auto& vec_msg = it->second;
 		vec_msg.push_back(std::move(rs_e));
 		if (vec_msg.size() == (size_t)(bs.bcube0_size - 1)*bs.bcube_level)
 		{
 			/*if all received done, move tensor to received tensor.*/
-			//printf("tensor %s is ready to reduce, move to received tensor buf.\n",it->first.c_str());
+			printf("tensor %s is ready to reduce, move to received tensor buf.\n", it->first.c_str());
 			{
 				std::lock_guard<std::mutex> recv_lock(bgs.bcube_mutex);
 				bgs.receiv_tensor.emplace(std::make_pair(name, std::move(vec_msg)));
@@ -316,7 +316,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 #if __RDMA_SLOW__send
 			printf("thread %ld will send data %lp in 1 seconds\n", pthread_self(), nit);
 
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::this_thread::sleep_for(std::chrono::millseconds(1));
 #endif
 
 #if _SEND_REAL_DATA_
@@ -342,11 +342,11 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__send
 			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			std::this_thread::sleep_for(std::chrono::millseconds(1));
 #endif
 #if _SEND_REAL_DATA_
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::seconds(1));
+				std::this_thread::sleep_for(std::chrono::millseconds(1));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
@@ -629,8 +629,8 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	while (true)
 	{
 #if __RDMA_SLOW__
-		printf("in recv loops will sleep for 1 seconds\n");
-		std::this_thread::sleep_for(std::chrono::seconds(1));
+		//printf("in recv loops will sleep for 1 seconds\n");
+		std::this_thread::sleep_for(std::chrono::millseconds(1));
 #endif
 		for (auto& recv_list : recv_chain)
 		{
@@ -642,8 +642,8 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			//printf("recv_list addr : %p\n", recv_list);
 			if (recv_list->next != nullptr)
 			{
-				if ((print_loops++ % 100) == 0)
-					printf("------------------------RECV--------------------------\n");
+				//if ((print_loops++ % 100) == 0)
+				printf("------------------------RECV--------------------------\n");
 
 				//std::free(recv_list->data_ptr); is NULL useless
 				auto free_tmp = recv_list;
