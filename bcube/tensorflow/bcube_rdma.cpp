@@ -280,10 +280,10 @@ static void send_by_RDMA(struct ibv_wc *wc)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
+#if __RDMA_SLOW__
 			printf("thread %ld will send data in 10 seconds\n", pthread_self());
 			std::this_thread::sleep_for(std::chrono::seconds(10));
-
-			/*可以发送tensor了，但是去哪拿呢？*/
+#endif
 			__send_str = data_gene(1024 * 1024 * 100);
 			send_tensor(id, __send_str, strlen(__send_str));
 		}
@@ -296,9 +296,10 @@ static void send_by_RDMA(struct ibv_wc *wc)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-			/*可以发送tensor了，但是去哪拿呢？*/
+#if __RDMA_SLOW__
 			printf("thread %ld will send data in 10 seconds\n", pthread_self());
 			std::this_thread::sleep_for(std::chrono::seconds(10));
+#endif
 			send_tensor(id, NULL, strlen(__send_str));
 		}
 		post_receive_client(id);
