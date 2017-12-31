@@ -243,7 +243,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		char* data = name + msg->name_len;
 		char tmp = *data;
 		*data = 0;
-		printf("send to node %d msg_name is %s, msg_len = %d, by thread %ld\n", msg->rank, name, pthread_self(), msg->msg_length);
+		printf("send to node %d tensor name is %s, msg_len = %d, by thread %ld\n", msg->rank, name, msg->msg_length, pthread_self());
 		*data = tmp;
 	}
 	memset(&wr, 0, sizeof(wr));
