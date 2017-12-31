@@ -583,6 +583,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			printf("recv_list addr : %p\n", recv_list);
 			if (recv_list->next != nullptr)
 			{
+				printf("------------------------RECV--------------------------\n");
 				std::free(recv_list->data_ptr);
 				auto free_tmp = recv_list;
 				recv_list = recv_list->next;
