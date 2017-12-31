@@ -931,10 +931,10 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
 
-			printf("send out: %s,\t send len=%d--------before: %p--new: %p----------\n", e.tensor_name.c_str(), encode_len, it.send_list, nit);
+			printf("send out: %s,\t send len=%d--------before: %p--new: %p----------\n", e.tensor_name.c_str(), encode_len, to_one_node.send_list, nit);
 
-			it.send_list->next = nit;
-			it.send_list = nit;
+			to_one_node.send_list->next = nit;
+			to_one_node.send_list = nit;
 
 
 			std::free((char*)tmp_msg);
