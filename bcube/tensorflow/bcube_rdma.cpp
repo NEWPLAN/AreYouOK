@@ -632,19 +632,14 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				free_tmp = nullptr;
 
 				{
-					//here is insert into recv_tensor.
-					msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
-					printf("\n\nrecv_msg info:\n");
-					printf("msg_length: %d\n", msg->msg_length);
-					printf("name_length: %d\n", msg->name_len);
-					printf("start position: %d\n", msg->start_pos);
-					printf("msg.data[0]: %c\n", msg->data[0]);
-					char* name = (char*)msg + sizeof(msg_struct);
-					char* data = name + msg->name_len;
-					char tmp = *data;
-					*data = 0;
-					printf("msg_name: %s\n", name);
-					*data = tmp;
+					//insert into recv_tensor...
+					void* new_msg = recv_list->data_ptr;
+					received_tensor_entry e;
+					show_msg(new_msg);
+					tensor_msg::decode(e, new_msg);
+					insert_to_recv_queue(bgs, e);
+					new_msg = nullptr;
+
 				}
 				std::free(recv_list->data_ptr);
 				recv_list->data_ptr = nullptr;
