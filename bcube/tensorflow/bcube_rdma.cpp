@@ -62,7 +62,7 @@ static void node_counts(bcube_struct& bcube_s)
 
 static node_item* get_new_node(void)
 {
-	node_item* nit = std::malloc(sizeof(node_item));
+	node_item* nit = (node_item*)std::malloc(sizeof(node_item));
 	if (nit == nullptr)
 	{
 		printf("fatal error : malloc node_item error\n");
