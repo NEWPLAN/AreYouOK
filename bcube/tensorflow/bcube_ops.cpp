@@ -77,6 +77,9 @@ inline bool check_cuda(tensor_table_entry& e, std::string op_name, cudaError_t r
 	return true;
 }
 
+#endif
+
+
 static  int TYPE_SIZE[] =
 {
 	4,				sizeof(bool),
