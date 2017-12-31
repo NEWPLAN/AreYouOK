@@ -294,9 +294,9 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__
-			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
+			printf("thread %ld will send data %lp in 1 seconds\n", pthread_self(), nit);
 
-			std::this_thread::sleep_for(std::chrono::seconds(10));
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 #endif
 
 #if _SEND_REAL_DATA_
@@ -322,11 +322,11 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 #if __RDMA_SLOW__
 			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
-			std::this_thread::sleep_for(std::chrono::seconds(10));
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 #endif
 #if _SEND_REAL_DATA_
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
