@@ -102,7 +102,7 @@ void bg_loops(bcube_global_struct& bgs)
 	bgs.unfinished_tensor.resize(4);
 	bgs.is_inited_done = true;
 	std::cout << "all init done, now we are going to send msg in bgthread..." << std::endl;
-	while (true)
+	while (false)
 	{
 		std::cout << "will block here ..." << std::endl;
 		std::this_thread::sleep_for(std::chrono::seconds(100));
