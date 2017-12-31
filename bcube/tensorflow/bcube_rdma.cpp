@@ -572,8 +572,10 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	msg_struct msg_buf;
 	while (true)
 	{
+#if __RDMA_SLOW__
 		printf("in recv loops will sleep for 5 seconds\n");
 		std::this_thread::sleep_for(std::chrono::seconds(5));
+#endif
 		for (auto& recv_list : recv_chain)
 		{
 			if (recv_list == nullptr)
