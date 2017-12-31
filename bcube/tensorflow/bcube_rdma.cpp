@@ -624,12 +624,15 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			{
 				if ((print_loops++ % 100) == 0)
 					printf("------------------------RECV--------------------------\n");
+
+				//std::free(recv_list->data_ptr); is NULL useless
+				auto free_tmp = recv_list;
+				recv_list = recv_list->next;
+				std::free(free_tmp);
+				free_tmp = nullptr;
+
 				{
 					msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
-					printf("msg.data[0]: %c\n", msg->data[0]);
-				}
-				if (0)
-				{
 					printf("recv_msg info:\n");
 					printf("msg_length: %d\n", msg->msg_length);
 					printf("name_length: %d\n", msg->name_len);
@@ -642,11 +645,6 @@ static void recv_RDMA(bcube_global_struct& bgs)
 					printf("msg_name: %s\n", name);
 					*data = tmp;
 				}
-				std::free(recv_list->data_ptr);
-				auto free_tmp = recv_list;
-				recv_list = recv_list->next;
-				std::free(free_tmp);
-				free_tmp = nullptr;
 			}
 		}
 	}
