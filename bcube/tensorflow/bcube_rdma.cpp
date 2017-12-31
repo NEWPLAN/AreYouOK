@@ -243,7 +243,7 @@ static void send_by_RDMA(struct ibv_wc *wc)
 
 	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
 	{
-		perror("send thread %ld will never be here!!!!!\n", pthread_self());
+		printf("send thread %ld will never be here!!!!!\n", pthread_self());
 		exit(0);
 	}
 	else if (wc->opcode & IBV_WC_RECV)
@@ -300,7 +300,7 @@ static void recv_by_RDMA(struct ibv_wc *wc)
 	}
 	else if (wc->opcode & IBV_WC_RECV)
 	{
-		perror("recv thread %ld will never be here!!!!!\n", pthread_self());
+		printf("%s\n", ); ("recv thread %ld will never be here!!!!!\n", pthread_self());
 		exit(0);
 	}
 	return;
