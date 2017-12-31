@@ -626,6 +626,10 @@ static void recv_RDMA(bcube_global_struct& bgs)
 					printf("------------------------RECV--------------------------\n");
 				{
 					msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
+					printf("msg.data[0]: %c\n", msg->data[0]);
+				}
+				if (0)
+				{
 					printf("recv_msg info:\n");
 					printf("msg_length: %d\n", msg->msg_length);
 					printf("name_length: %d\n", msg->name_len);
