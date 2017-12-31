@@ -208,7 +208,15 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 	struct ibv_send_wr wr, *bad_wr = NULL;
 	struct ibv_sge sge;
 	if (buff)
+	{
 		memcpy(ctx->buffer, buff, len);
+		std::free(buff);
+	}
+	else
+	{
+		printf("fatal error in send out data can not be empty\n");
+		exit(-1);
+	}
 	memset(&wr, 0, sizeof(wr));
 	wr.wr_id = (uintptr_t)id;
 	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -264,6 +272,9 @@ static char* data_gene(int size)
 }
 
 static char* __send_str = NULL;
+#define _SEND_REAL_DATA_ 11
+
+
 static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
@@ -287,8 +298,18 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 #endif
+
+#if _SEND_REAL_DATA_
+			while (nit->next == nullptr)
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+			node_item* next_node = nit->next;
+			std::free(nit);
+			nit = next_node;
+			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
+#else
 			__send_str = data_gene(1024 * 1024 * 100);
 			send_tensor(id, __send_str, strlen(__send_str));
+#endif
 		}
 		else if (ctx->msg->id == MSG_DONE)
 		{
@@ -303,7 +324,16 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
 			std::this_thread::sleep_for(std::chrono::seconds(10));
 #endif
+#if _SEND_REAL_DATA_
+			while (nit->next == nullptr)
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+			node_item* next_node = nit->next;
+			std::free(nit);
+			nit = next_node;
+			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
+#else
 			send_tensor(id, NULL, strlen(__send_str));
+#endif
 		}
 		post_receive_client(id);
 	}
@@ -938,7 +968,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			to_one_node.send_list = nit;
 
 
-			std::free((char*)tmp_msg);
+//			std::free((char*)tmp_msg);
 			tmp_msg = nullptr;
 		}
 	}
