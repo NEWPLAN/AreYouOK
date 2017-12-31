@@ -300,7 +300,7 @@ static void recv_by_RDMA(struct ibv_wc *wc)
 	}
 	else if (wc->opcode & IBV_WC_RECV)
 	{
-		printf("%s\n", ); ("recv thread %ld will never be here!!!!!\n", pthread_self());
+		printf("recv thread %ld will never be here!!!!!\n", pthread_self());
 		exit(0);
 	}
 	return;
