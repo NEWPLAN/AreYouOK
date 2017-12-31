@@ -83,7 +83,7 @@ static _rdma_thread_pack_* get_new_thread_pack(struct rdma_cm_id* id, node_item*
 	}
 	rtp->rdma_id = id;
 	rtp->nit = nit;
-	return rrp;
+	return rtp;
 }
 
 /*确定当前bcube所处的节点和信息*/
