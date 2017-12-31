@@ -318,8 +318,8 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		uint32_t size = ntohl(wc->imm_data);
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		static int64_t lpop = 0;
-		//if (lpop % 500 == 0)
-		printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
+		if (lpop % 100 == 0)
+			printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		_data = (void*)std::malloc(sizeof(char) * size);
@@ -570,6 +570,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	int fd_num = fd_vect.size();
 	rdma_server_establisted = true;
 	msg_struct msg_buf;
+	int print_loops = 0;
 	while (true)
 	{
 #if __RDMA_SLOW__
@@ -586,7 +587,8 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			//printf("recv_list addr : %p\n", recv_list);
 			if (recv_list->next != nullptr)
 			{
-				printf("------------------------RECV--------------------------\n");
+				if ((print_loops++ % 100) == 0)
+					printf("------------------------RECV--------------------------\n");
 				std::free(recv_list->data_ptr);
 				auto free_tmp = recv_list;
 				recv_list = recv_list->next;
