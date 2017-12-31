@@ -15,8 +15,8 @@
 # ==============================================================================
 */
 
-#ifndef __BCUBE__MESSAGE__
-#define __BCUBE__MESSAGE__
+#ifndef __TENSORFLOW_BCUBE_MESSAGE_H__
+#define __TENSORFLOW_BCUBE_MESSAGE_H__
 
 #include <iostream>
 #include <vector>

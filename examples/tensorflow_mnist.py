@@ -99,7 +99,7 @@ def main(_):
     #config.gpu_options.visible_device_list = str(bq.local_rank())
 
     # Save checkpoints only on worker 0 to prevent other workers from corrupting them.
-    checkpoint_dir = None
+    checkpoint_dir = './checkpoints' if bq.rank() == 0 else None
 
     # The MonitoredTrainingSession takes care of session initialization,
     # restoring from a checkpoint, saving to a checkpoint, and closing when done
