@@ -970,7 +970,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			*/
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
-			tmp_msg = to_one_node.node_id;
+			tmp_msg->rank = to_one_node.node_id;
 
 			printf("append to list will send to %d: %s,\t send len=%d--------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len);
 			bs.topo[0][to_one_node.node_id].send_list->next = nit;
