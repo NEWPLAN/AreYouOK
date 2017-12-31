@@ -236,86 +236,7 @@ static char* data_gene(int size)
 }
 
 static char* __send_str = NULL;
-static void unused_transport_RDMA(struct ibv_wc *wc)
-{
-	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
-	struct context *ctx = (struct context *)id->context;
 
-	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
-	{
-		uint32_t size = ntohl(wc->imm_data);
-		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
-		static int64_t lpop = 0;
-		//if (lpop % 500 == 0)
-		printf("received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", size, inet_ntoa(client_addr->sin_addr));
-		lpop++;
-		//printf("%s\n",ctx->buffer);
-		post_receive_server(id);
-		ctx->msg->id = MSG_READY;
-		send_message(id);
-	}
-	else if (wc->opcode & IBV_WC_RECV)
-	{
-		if (ctx->msg->id == MSG_MR)
-		{
-			ctx->peer_addr = ctx->msg->data.mr.addr;
-			ctx->peer_rkey = ctx->msg->data.mr.rkey;
-			printf("received remote memory address and key\n");
-			ctx->remote_idle = true;
-			printf("will send data in 4 seconds\n");
-			std::this_thread::sleep_for(std::chrono::seconds(4));
-
-			/*可以发送tensor了，但是去哪拿呢？*/
-			__send_str = data_gene(1024 * 1024 * 100);
-			send_tensor(id, __send_str, strlen(__send_str));
-		}
-		else if (ctx->msg->id == MSG_DONE)
-		{
-			printf("received DONE, disconnecting\n");
-			rdma_disconnect(id);
-			return;
-		}
-		else if (ctx->msg->id == MSG_READY)
-		{
-			ctx->remote_idle = true;
-			/*可以发送tensor了，但是去哪拿呢？*/
-			printf("will send data in 4 seconds\n");
-			std::this_thread::sleep_for(std::chrono::seconds(4));
-			send_tensor(id, NULL, strlen(__send_str));
-		}
-		post_receive_client(id);
-	}
-}
-
-static void *unused_poll_cq(void *tmp_id)
-{
-	struct ibv_cq *cq = NULL;
-	struct ibv_wc wc;
-	struct rdma_cm_id *id = (struct rdma_cm_id *)tmp_id;
-	struct context *ctx = (struct context *)id->context;
-	void *ev_ctx = NULL;
-
-	while (1)
-	{
-		TEST_NZ(ibv_get_cq_event(ctx->comp_channel, &cq, &ev_ctx));
-		ibv_ack_cq_events(cq, 1);
-		TEST_NZ(ibv_req_notify_cq(cq, 0));
-
-		while (ibv_poll_cq(cq, 1, &wc))
-		{
-			if (wc.status == IBV_WC_SUCCESS)
-			{
-				unused_transport_RDMA(&wc);
-			}
-			else
-			{
-				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
-				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
-			}
-		}
-	}
-	return NULL;
-}
 
 static void send_by_RDMA(struct ibv_wc *wc)
 {
@@ -343,7 +264,7 @@ static void send_by_RDMA(struct ibv_wc *wc)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-			printf("will send data in 4 seconds\n");
+			printf("thread %d will send data in 4 seconds\n", pthread_self());
 			std::this_thread::sleep_for(std::chrono::seconds(4));
 
 			/*可以发送tensor了，但是去哪拿呢？*/
@@ -360,7 +281,7 @@ static void send_by_RDMA(struct ibv_wc *wc)
 		{
 			ctx->remote_idle = true;
 			/*可以发送tensor了，但是去哪拿呢？*/
-			printf("will send data in 4 seconds\n");
+			printf("thread %d will send data in 4 seconds\n", pthread_self());
 			std::this_thread::sleep_for(std::chrono::seconds(4));
 			send_tensor(id, NULL, strlen(__send_str));
 		}
@@ -379,7 +300,7 @@ static void recv_by_RDMA(struct ibv_wc *wc)
 		struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 		static int64_t lpop = 0;
 		//if (lpop % 500 == 0)
-		printf("received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", size, inet_ntoa(client_addr->sin_addr));
+		printf("thread: %d received %i bytes from client %s!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr));
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		post_receive_server(id);
