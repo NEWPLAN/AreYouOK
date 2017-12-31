@@ -287,7 +287,7 @@ static void _transport_RDMA(struct ibv_wc *wc)
 	}
 }
 
-static void *poll_cq(void *tmp_id)
+static void *unused_poll_cq(void *tmp_id)
 {
 	struct ibv_cq *cq = NULL;
 	struct ibv_wc wc;
