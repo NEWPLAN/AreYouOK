@@ -237,6 +237,15 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		printf("fatal error in send out data can not be empty\n");
 		exit(-1);
 	}
+	{
+		msg_struct* msg = (msg_struct*)buff;
+		char* name = (char*)msg + sizeof(msg_struct);
+		char* data = name + msg->name_len;
+		char tmp = *data;
+		*data = 0;
+		printf("send to node %d msg_name is %s, msg_len = %d, by thread %ld\n", msg->rank, name, pthread_self(), msg->msg_length);
+		*data = tmp;
+	}
 	memset(&wr, 0, sizeof(wr));
 	wr.wr_id = (uintptr_t)id;
 	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -313,23 +322,14 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->peer_rkey = ctx->msg->data.mr.rkey;
 			printf("received remote memory address and key\n");
 			ctx->remote_idle = true;
-#if __RDMA_SLOW__send
-			printf("thread %ld will send data %lp in 1 seconds\n", pthread_self(), nit);
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
-
-#if _SEND_REAL_DATA_
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::seconds(10));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
 			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
-#else
-			__send_str = data_gene(1024 * 1024 * 100);
-			send_tensor(id, __send_str, strlen(__send_str));
-#endif
+
 		}
 		else if (ctx->msg->id == MSG_DONE)
 		{
@@ -340,20 +340,14 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		else if (ctx->msg->id == MSG_READY)
 		{
 			ctx->remote_idle = true;
-#if __RDMA_SLOW__send
-			printf("thread %ld will send data %lp in 10 seconds\n", pthread_self(), nit);
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
-#if _SEND_REAL_DATA_
+
 			while (nit->next == nullptr)
 				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* next_node = nit->next;
 			std::free(nit);
 			nit = next_node;
 			send_tensor(id, (char*)(nit->data_ptr), ((msg_struct*)(nit->data_ptr))->msg_length);
-#else
-			send_tensor(id, NULL, strlen(__send_str));
-#endif
+
 		}
 		post_receive_client(id);
 	}
@@ -646,8 +640,8 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				//printf("------------------------RECV--------------------------\n");
 
 				//std::free(recv_list->data_ptr); is NULL useless
-				auto free_tmp = recv_list;
-				recv_list = recv_list->next;
+				node_item* free_tmp = recv_list;
+				recv_list = free_tmp->next;
 				std::free(free_tmp);
 				free_tmp = nullptr;
 
@@ -976,8 +970,9 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			*/
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
+			tmp_msg = to_one_node.node_id;
 
-//			printf("send to node %d: %s,\t send len=%d--------before: %p--new: %p----------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len, bs.topo[0][to_one_node.node_id].send_list, nit);
+			printf("append to list will send to %d: %s,\t send len=%d--------\n", to_one_node.node_id, e.tensor_name.c_str(), encode_len);
 			bs.topo[0][to_one_node.node_id].send_list->next = nit;
 			bs.topo[0][to_one_node.node_id].send_list = nit;
 			//to_one_node.send_list->next = nit;
