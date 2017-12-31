@@ -583,7 +583,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				printf("fatal error in malloc recv_list！！！\n");
 				exit(-1);
 			}
-			printf("recv_list addr : %p\n", recv_list);
+			//printf("recv_list addr : %p\n", recv_list);
 			if (recv_list->next != nullptr)
 			{
 				printf("------------------------RECV--------------------------\n");
