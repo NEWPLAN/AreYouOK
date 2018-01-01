@@ -180,7 +180,7 @@ static void topology_init(bcube_struct& bcube_s)
 	printf("BCube(%d,%d) is constructed done!\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 }
 struct bcube_global_struct;
-static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry rs_e)
+static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 {
 	auto& bs = bgs.bcube_s;
 	auto& recv_queue = bgs.receiv_tmp_tensor;
@@ -339,7 +339,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
 			{
@@ -362,7 +362,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(1));
 
 			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
@@ -696,7 +696,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 					received_tensor_entry e;
 					show_msg(new_msg);
 					tensor_msg::decode(e, new_msg);
-					insert_to_recv_queue(bgs, std::move(e));
+					insert_to_recv_queue(bgs, e);
 					new_msg = nullptr;
 
 				}
