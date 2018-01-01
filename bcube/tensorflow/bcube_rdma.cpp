@@ -721,7 +721,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 					received_tensor_entry e;
 					show_msg(new_msg);
 					tensor_msg::decode(e, new_msg);
-					insert_to_recv_queue(bgs, e);
+					insert_to_recv_queue(bgs, std::move(e));
 					new_msg = nullptr;
 
 				}
