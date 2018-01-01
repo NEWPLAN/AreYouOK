@@ -196,7 +196,7 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 			/*if all received done, move tensor to received tensor.*/
 			//printf("tensor %s is ready to reduce, move to received tensor buf.\n", it->first.c_str());
 			{
-				std::lock_guard<std::mutex> recv_lock(bgs.bcube_mutex);
+				std::lock_guard<std::mutex> recv_lock(bgs.tensor_recv_mutex);
 				bgs.receiv_tensor.emplace(std::make_pair(name, std::move(vec_msg)));
 			}
 			recv_queue.erase(it);
