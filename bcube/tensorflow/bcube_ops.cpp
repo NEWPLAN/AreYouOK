@@ -685,10 +685,10 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	e.tensor = tensor;
 	e.output = output;
 	show_tensor(e, ALLREDUCE);
-//#if _show_res__
+#if _show_res__
 	printf("allreduce tensor_name is %s\n", e.tensor_name.c_str());
 	std::this_thread::sleep_for(std::chrono::seconds(10));
-//#endif
+#endif
 	e.ready_event = ready_event;
 	e.device = device;
 	e.callback = callback;

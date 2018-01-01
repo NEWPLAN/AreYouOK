@@ -242,8 +242,10 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		printf("fatal error in send out data can not be empty\n");
 		exit(-1);
 	}
-	printf("send count %d\n", ++sendcount);
+
+	if (0)
 	{
+		printf("send count %d\n", ++sendcount);
 		msg_struct* msg = (msg_struct*)(ctx->buffer);
 		char* name = (char*)msg + sizeof(msg_struct);
 		char* data = name + msg->name_len;
@@ -392,7 +394,7 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		//printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
-		printf("recv_count: %d\n", ++recvcount);
+		//printf("recv_count: %d\n", ++recvcount);
 		_data = (void*)std::malloc(sizeof(char) * size);
 		if (size != ((msg_struct*)(ctx->buffer))->msg_length)
 		{
@@ -673,6 +675,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				recv_list = free_tmp->next;
 				std::free(free_tmp);
 				free_tmp = nullptr;
+				if (0)
 				{
 					{
 						msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
@@ -1078,6 +1081,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			tmp_msg->rank = to_one_node.node_id;
 
 			//printf("append to list will send to %d: %s,\t send len=%d--------\n", tmp_msg->rank, e.tensor_name.c_str(), encode_len);
+			if (0)
 			{
 				{
 					msg_struct* msg = (msg_struct*)tmp_msg;
