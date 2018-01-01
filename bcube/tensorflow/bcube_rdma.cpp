@@ -45,8 +45,8 @@ const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
 static std::atomic_bool rdma_server_establisted(false);
 static std::atomic_bool rdma_client_establisted(false);
 
-static std::mutex rdma_send_mutex;
-static std::mutex rdma_recv_mutex;
+//static std::mutex rdma_send_mutex;
+//static std::mutex rdma_recv_mutex;
 static node_item* out_send_list [20] = {nullptr};
 
 static void rc_die(const char *reason)
@@ -343,7 +343,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
 			{
-				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
+				//std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
 				free_tp_node = nit;
 				nit = nit->next;
 			}
@@ -367,7 +367,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
 			{
-				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
+				//std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
 				free_tp_node = nit;
 				nit = nit->next;
 			}
@@ -456,7 +456,7 @@ static void *recv_poll_cq(void *rtp)
 				{
 					auto new_node = get_new_node();
 					new_node->data_ptr = (char*)recv_data;
-					std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
+					//std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
 					nit->next = new_node;
 					nit = new_node;
 				}
@@ -681,7 +681,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 
 				//std::free(recv_list->data_ptr); is NULL useless
 				{
-					std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
+					//std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
 					node_item* free_tmp = recv_list;
 					recv_list = free_tmp->next;
 					std::free(free_tmp);
@@ -1091,7 +1091,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 				}
 			}
 			{
-				std::lock_guard<std::mutex> append_lock(rdma_send_mutex);
+				//std::lock_guard<std::mutex> append_lock(rdma_send_mutex);
 				bs.topo[0][to_one_node.node_id].send_list->next = nit;
 				bs.topo[0][to_one_node.node_id].send_list = nit;
 				//printf("encoded %d \n", ++encodecount);
