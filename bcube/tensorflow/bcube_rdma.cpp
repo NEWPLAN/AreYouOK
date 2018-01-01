@@ -663,6 +663,22 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				recv_list = free_tmp->next;
 				std::free(free_tmp);
 				free_tmp = nullptr;
+				{
+					{
+						msg_struct* msg = (msg_struct*)(recv_list->data_ptr);
+						char* name = (char*)msg + sizeof(msg_struct);
+						char* data = name + msg->name_len;
+						char tmp = *data;
+						*data = 0;
+						printf("recv from node %d tensor name is %s, msg_len = %d\n", msg->rank, name, msg->msg_length);
+						*data = tmp;
+						if (msg->data[0] != ',')
+						{
+							printf("fatal error in recv loops...\n");
+							exit(0);
+						}
+					}
+				}
 
 				{
 					//insert into recv_tensor...
