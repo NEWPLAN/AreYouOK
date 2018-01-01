@@ -362,7 +362,7 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::nanoseconds(1));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 
 			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
