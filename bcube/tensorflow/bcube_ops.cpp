@@ -295,15 +295,15 @@ void release_src(tensor_table_entry& e)
 		}
 	}
 #endif
-	std::vector<void*> free_ptr;
-	free_ptr.push_back(e.tensor_data);
+	std::vector<char*> free_ptr;
+	free_ptr.push_back((char*)(e.tensor_data));
 	free_ptr.push_back(nullptr);
 
 	for (auto& it : e.gather_tensor)
 	{
 		if (find(free_ptr.begin(), free_ptr.end(), it.tensor_ptr) == free_ptr.end())
 		{
-			std::free(it.tensor_ptr);
+			std::free((char*)(it.tensor_ptr));
 			//printf("in release: free %p\n", it.tensor_ptr);
 			free_ptr.push_back(it.tensor_ptr);
 			it.tensor_ptr = nullptr;
@@ -313,7 +313,7 @@ void release_src(tensor_table_entry& e)
 			perror("error in free data");
 		}
 	}
-	std::free(e.tensor_data);
+	std::free((char*)e.tensor_data);
 	e.tensor_data = nullptr;
 
 	return;
