@@ -1042,7 +1042,7 @@ void fun_dump( int no)
 	for ( ; i < size; i++)
 		printf("%s\n", stack_info[i]);
 
-	free( stack_info);
+	//free( stack_info);
 
 	//free anything
 	std::this_thread::sleep_for(std::chrono::seconds(100));
