@@ -389,6 +389,11 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		lpop++;
 		//printf("%s\n",ctx->buffer);
 		_data = (void*)std::malloc(sizeof(char) * size);
+		if (size != ((msg_struct*)(ctx->buffer))->msg_length)
+		{
+			printf("fatal error: recv send_message length is not equal...\n");
+			exit(0);
+		}
 		if (_data == nullptr)
 		{
 			printf("fatal error in recv data malloc!!!!\n");
