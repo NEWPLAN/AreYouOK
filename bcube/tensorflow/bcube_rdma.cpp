@@ -113,6 +113,7 @@ static _rdma_thread_pack_* get_new_thread_pack(struct rdma_cm_id* id, node_item*
 }
 
 /*确定当前bcube所处的节点和信息*/
+int current_node_rank;
 static void setup_node(bcube_struct& bcube_s)
 {
 	char* __rank__ = getenv("BCUBE_RANK");
@@ -122,6 +123,7 @@ static void setup_node(bcube_struct& bcube_s)
 		std::cerr << "error in get env rank, you must set up it before run." << std::endl;
 		exit(-1);
 	}
+	current_node_rank = bcube_s.rank;
 	bcube_s.local_info.node_index = bcube_s.rank;
 	for (size_t lev = 0; lev < bcube_s.topo.size(); lev++)/*add myself ip into mynodes*/
 		bcube_s.local_info.myip.push_back(bcube_s.topo[lev][bcube_s.rank].ip);
@@ -141,8 +143,10 @@ static void setup_node(bcube_struct& bcube_s)
 	return;
 
 }
-static std::atomic_int recvcount(0);
-static std::atomic_int sendcount(0);
+static std::atomic_int redcuecount(0);
+static std::atomic_int encodecount(0);
+static std::atomic_int recvcount[20];
+static std::atomic_int sendcount[20];
 /*加载所有的网络节点*/
 /*
 12.12.10.XXX
@@ -150,6 +154,11 @@ static std::atomic_int sendcount(0);
 */
 static void topology_init(bcube_struct& bcube_s)
 {
+	for (int i = 0; i < 20; i++)
+	{
+		recvcount[i] = 0;
+		sendcount[i] = 0;
+	}
 	printf("constructing a BCube(%d,%d) topology\n", bcube_s.bcube0_size, bcube_s.bcube_level);
 	node_counts(bcube_s);
 	for (int leve = 0; leve < bcube_s.bcube_level; leve++)
@@ -242,12 +251,17 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		printf("fatal error in send out data can not be empty\n");
 		exit(-1);
 	}
-	printf("send count %d\n", ++sendcount);
-	if (0)
+
+
 	{
 
 		msg_struct* msg = (msg_struct*)(ctx->buffer);
 		char* name = (char*)msg + sizeof(msg_struct);
+		printf("send to %d count %d\n", msg->rank, ++sendcount[ msg->rank]);
+		msg->rank = current_node_rank;
+	}
+	if (0)
+	{
 		char* data = name + msg->name_len;
 		char tmp = *data;
 		*data = 0;
@@ -394,7 +408,8 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		//printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
-		printf("recv_count: %d\n", ++recvcount);
+		msg_struct* msg = (msg_struct*)(ctx->buffer);
+		printf("recv from node %d count: %d\n", msg->rank, ++recvcount[msg->rank]);
 		_data = (void*)std::malloc(sizeof(char) * size);
 		if (size != ((msg_struct*)(ctx->buffer))->msg_length)
 		{
@@ -675,6 +690,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				recv_list = free_tmp->next;
 				std::free(free_tmp);
 				free_tmp = nullptr;
+				printf("merged %d \n", ++redcuecount);
 				if (0)
 				{
 					{
@@ -1097,6 +1113,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 				std::lock_guard<std::mutex> append_lock(rdma_send_mutex);
 				bs.topo[0][to_one_node.node_id].send_list->next = nit;
 				bs.topo[0][to_one_node.node_id].send_list = nit;
+				printf("encoded %d \n", ++encodecount);
 			}
 
 			//to_one_node.send_list->next = nit;
