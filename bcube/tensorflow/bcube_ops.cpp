@@ -305,7 +305,7 @@ void release_src(tensor_table_entry& e)
 		{
 			std::free((char*)(it.tensor_ptr));
 			//printf("in release: free %p\n", it.tensor_ptr);
-			free_ptr.push_back(it.tensor_ptr);
+			free_ptr.push_back((char*)(it.tensor_ptr));
 			it.tensor_ptr = nullptr;
 		}
 		else if (it.tensor_ptr != e.tensor_data)
