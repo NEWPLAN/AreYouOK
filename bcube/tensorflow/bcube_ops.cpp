@@ -253,7 +253,7 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 			}
 			{
 				/*release reources*/
-				std::free(it->receive_ptr);
+				std::free((char*)(it->receive_ptr));
 				//printf("in allreduce: free %p\n", it->receive_ptr);
 				it->receive_ptr = nullptr;
 			}
@@ -268,7 +268,7 @@ bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatt
 			for (size_t index = 0; index < it->gather_ptr.size(); index++)
 			{
 				auto& _a_tensor = e.gather_tensor[it->start_position + index];
-				std::free(_a_tensor.tensor_ptr);
+				std::free((char*)(_a_tensor.tensor_ptr));
 				_a_tensor.tensor_ptr = it->gather_ptr[index].tensor_ptr;
 				_a_tensor.tensor_shape = it->gather_ptr[index].tensor_shape;
 			}

@@ -262,7 +262,7 @@ void recv_loops(bcube_global_struct& bgs)
 				show_msg(new_msg);
 				tensor_msg::decode(e, new_msg);
 				insert_to_recv_queue(bgs, e);
-				std::free(new_msg);
+				std::free((char*)new_msg);
 				new_msg = nullptr;
 
 				re.data_ptr = nullptr;

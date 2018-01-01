@@ -606,7 +606,7 @@ static void on_disconnect(struct rdma_cm_id *id)
 	ibv_dereg_mr(ctx->buffer_mr);
 	ibv_dereg_mr(ctx->msg_mr);
 
-	free(ctx->buffer);
+	free((char*)(ctx->buffer));
 	free(ctx->msg);
 	free(ctx);
 }
@@ -725,7 +725,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 					new_msg = nullptr;
 
 				}
-				std::free(recv_list->data_ptr);
+				std::free((char*)(recv_list->data_ptr));
 				recv_list->data_ptr = nullptr;
 			}
 		}
