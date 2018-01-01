@@ -465,6 +465,7 @@ static void *recv_poll_cq(void *rtp)
 				{
 					auto new_node = get_new_node();
 					new_node->data_ptr = (char*)recv_data;
+					std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
 					nit->next = new_node;
 					nit = new_node;
 				}
@@ -688,10 +689,13 @@ static void recv_RDMA(bcube_global_struct& bgs)
 				//printf("------------------------RECV--------------------------\n");
 
 				//std::free(recv_list->data_ptr); is NULL useless
-				node_item* free_tmp = recv_list;
-				recv_list = free_tmp->next;
-				std::free(free_tmp);
-				free_tmp = nullptr;
+				{
+					std::lock_guard<std::mutex> recv_lock(rdma_recv_mutex);
+					node_item* free_tmp = recv_list;
+					recv_list = free_tmp->next;
+					std::free(free_tmp);
+					free_tmp = nullptr;
+				}
 				printf("merged %d \n", ++redcuecount);
 				if (0)
 				{
