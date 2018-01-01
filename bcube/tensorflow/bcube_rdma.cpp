@@ -242,7 +242,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		exit(-1);
 	}
 	{
-		msg_struct* msg = (msg_struct*)buff;
+		msg_struct* msg = (msg_struct*)(ctx->buffer);
 		char* name = (char*)msg + sizeof(msg_struct);
 		char* data = name + msg->name_len;
 		char tmp = *data;
