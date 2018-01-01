@@ -491,9 +491,9 @@ void bcube_do_steps(bcube_global_struct& bgs)
 	auto unfin_size = (int)bgs.unfinished_tensor.size();
 	{
 		/*last stage*/
-		std::vector<tensor_table_entry> tmp_tensor_table;
+		//std::vector<tensor_table_entry> tmp_tensor_table;
 		auto& last_stage_tensor = unfinished_vect[unfin_size - 1];
-		for (auto it = last_stage_tensor.begin(); it != last_stage_tensor.end(); it++)
+		for (auto it = last_stage_tensor.begin(); it != last_stage_tensor.end();)
 		{
 			if (bcube_reduce(bgs, *it, false))
 			{
@@ -502,23 +502,25 @@ void bcube_do_steps(bcube_global_struct& bgs)
 				/*show_tensor(*it);
 				release_src(*it);*/
 				//release_src(*it);
+				it = last_stage_tensor.erase(it);
 			}
 			else
 			{
-				tmp_tensor_table.push_back(std::move(*it));
+				it++;
+				//tmp_tensor_table.push_back(std::move(*it));
 			}
 		}
-		last_stage_tensor = std::move(tmp_tensor_table);
+		//last_stage_tensor = std::move(tmp_tensor_table);
 	}
 	for (int unfin_index = unfin_size - 2; unfin_index >= 0; unfin_index--)
 	{
 		//printf("indx = %d   \n", unfin_index);
 		/*from step3->step2->step1...step0*/
-		std::vector<tensor_table_entry> tmp_tensor_table;
+		//std::vector<tensor_table_entry> tmp_tensor_table;
 		auto& step_it = unfinished_vect[unfin_index];
 
 
-		for (auto it = step_it.begin(); it != step_it.end(); it++)
+		for (auto it = step_it.begin(); it != step_it.end();)
 		{
 			//printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
 			bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
@@ -533,13 +535,16 @@ void bcube_do_steps(bcube_global_struct& bgs)
 #endif
 				unfinished_vect[unfin_index + 1].push_back(std::move(*it));
 
+				it = step_it.erase(it);
+
 			}
 			else
 			{
-				tmp_tensor_table.push_back(std::move(*it));
+				it++;
+				//tmp_tensor_table.push_back(std::move(*it));
 			}
 		}
-		step_it = std::move(tmp_tensor_table);
+		//step_it = std::move(tmp_tensor_table);
 	}
 	{
 		/*from buf copy to unfinished.*/
