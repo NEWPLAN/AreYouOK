@@ -260,16 +260,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		//printf("send to %d count %d\n", msg->rank, ++sendcount[ msg->rank]);
 		msg->rank = current_node_rank;
 	}
-	if (0)
-	{
-		msg_struct* msg = (msg_struct*)(ctx->buffer);
-		char* name = (char*)msg + sizeof(msg_struct);
-		char* data = name + msg->name_len;
-		char tmp = *data;
-		*data = 0;
-		printf("send to node %d tensor name is %s, msg_len = %d, by thread %ld\n", msg->rank, name, msg->msg_length, pthread_self());
-		*data = tmp;
-	}
+
 	memset(&wr, 0, sizeof(wr));
 	wr.wr_id = (uintptr_t)id;
 	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
@@ -348,8 +339,8 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::seconds(1));
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
 			{
 				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
@@ -371,9 +362,9 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 			ctx->remote_idle = true;
 
 			while (nit->next == nullptr)
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			//std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			node_item* free_tp_node;
 			{
 				std::lock_guard<std::mutex> send_lock(rdma_send_mutex);
