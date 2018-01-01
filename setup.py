@@ -312,7 +312,7 @@ def fully_define_extension(build_ext):
     if have_rdma:
         SOURCES+=['bcube/tensorflow/bcube_rdma.cpp']
     #COMPILE_FLAGS = ['-std=c++11', '-fPIC', '-Os'] + tf_compile_flags
-    COMPILE_FLAGS = ['-std=c++11'] + tf_compile_flags
+    COMPILE_FLAGS = ['-std=c++11','-fPIC', '-Os'] + tf_compile_flags
     LINK_FLAGS = tf_link_flags
     LIBRARY_DIRS = []
     LIBRARIES = []
