@@ -662,6 +662,7 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 		return;
 	}
 
+
 	std::vector<int64_t> _tensor_shape;
 	std::string _shape2string;
 	//printf("Check 1\n");
@@ -679,9 +680,10 @@ void bcube_allreduce_queue(OpKernelContext* context, const Tensor& tensor,
 	e.tensor = tensor;
 	e.output = output;
 	show_tensor(e, ALLREDUCE);
-#if _show_res__
+//#if _show_res__
 	printf("allreduce tensor_name is %s\n", e.tensor_name.c_str());
-#endif
+	std::this_thread::sleep_for(std::chrono::seconds(1000));
+//#endif
 	e.ready_event = ready_event;
 	e.device = device;
 	e.callback = callback;
