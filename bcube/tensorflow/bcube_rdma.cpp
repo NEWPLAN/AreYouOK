@@ -141,7 +141,8 @@ static void setup_node(bcube_struct& bcube_s)
 	return;
 
 }
-
+static std::atomic_int recvcount(0);
+static std::atomic_int sendcount(0);
 /*加载所有的网络节点*/
 /*
 12.12.10.XXX
@@ -241,6 +242,7 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		printf("fatal error in send out data can not be empty\n");
 		exit(-1);
 	}
+	printf("send count %d\n", ++sendcount);
 	{
 		msg_struct* msg = (msg_struct*)(ctx->buffer);
 		char* name = (char*)msg + sizeof(msg_struct);
@@ -373,6 +375,8 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 	return nit;
 }
 
+
+
 static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
@@ -388,6 +392,7 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 		//printf("thread: %ld received %i bytes from client %s!!!!!!!!!!!!!%p!!!!!!!!!!!!!!!!!!!!!!!\n", pthread_self(), size, inet_ntoa(client_addr->sin_addr), nit);
 		lpop++;
 		//printf("%s\n",ctx->buffer);
+		printf("recv_count: %d\n", ++recvcount);
 		_data = (void*)std::malloc(sizeof(char) * size);
 		if (size != ((msg_struct*)(ctx->buffer))->msg_length)
 		{
