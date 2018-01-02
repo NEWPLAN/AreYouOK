@@ -865,7 +865,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 			//here for sleep...
 		}
-		while (!shut_down);
+		while (!bgs.shut_down);
 	}
 	else
 		recv_tensor_from_list(recv_chain);
