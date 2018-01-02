@@ -327,8 +327,8 @@ static void batch_send(struct rdma_cm_id * id, node_item*& nit)
 
 	uint32_t send_byte = 0;
 
-	while (nit->next == nullptr)
-		std::this_thread::sleep_for(std::chrono::nanoseconds(100));
+	while (nit->next == nullptr);
+	//std::this_thread::sleep_for(std::chrono::nanoseconds(10));
 
 	while (nit->next != nullptr)
 	{
@@ -831,7 +831,6 @@ static void recv_RDMA(bcube_global_struct& bgs)
 						show_msg(new_msg);
 						tensor_msg::decode(e, new_msg);
 						insert_to_recv_queue(bgs, e);
-						//new_msg = nullptr;
 						data_len += ((msg_struct*)new_msg)->msg_length;
 					}
 				}

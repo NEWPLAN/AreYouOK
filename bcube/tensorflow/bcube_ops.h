@@ -46,6 +46,7 @@
 *include all tensor infos
 */
 
+
 #define CPU_DEVICE_ID -1
 
 typedef std::unordered_map<std::string, std::vector<received_tensor_entry>> Received_tensor;
@@ -89,6 +90,9 @@ struct bcube_global_struct
 #if HAVE_CUDA
 	std::unordered_map<int, cudaStream_t> streams;
 #endif
+
+	//optimize delocked...
+
 
 
 	~bcube_global_struct()
