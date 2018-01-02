@@ -328,7 +328,7 @@ static void batch_send(struct rdma_cm_id * id, node_item*& nit)
 	uint32_t send_byte = 0;
 
 	while (nit->next == nullptr)
-		std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+		std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
 
 	while (nit->next != nullptr)
 	{
