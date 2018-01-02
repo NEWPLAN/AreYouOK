@@ -166,7 +166,7 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 			{
 				std::vector<received_tensor_entry> msg_record;
 				msg_record.push_back(std::move(header->recv_tensor));
-				tensor_receive.emplace(std::make_pair(name, std::move(msg_record)));
+				tensor_receive.emplace(std::make_pair(new_tensor_name, std::move(msg_record)));
 			}
 		}
 
@@ -179,7 +179,7 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 		auto& tensor_receive = bgs.receiv_tensor;
 		auto find_tensor = tensor_receive.find(tensor_name);
 		if (find_tensor == tensor_receive.end())return false;/*not ready, return now*/
-		find_tensor_size = (find_tensor->second).szie();
+		find_tensor_size = (find_tensor->second).size();
 		if (find_tensor_size < 4)return false;/*not ready, return now*/
 		if (find_tensor_size > 4)
 		{
