@@ -45,7 +45,15 @@
 /*
 *include all tensor infos
 */
-
+typedef struct _recv_tensor_
+{
+	received_tensor_entry recv_tensor;
+	struct _recv_tensor_* next;
+	_recv_tensor_(received_tensor_entry& rte): next(nullptr)
+	{
+		recv_tensor = std::move(rte);
+	}
+} unlock_recv_tensor;
 
 #define CPU_DEVICE_ID -1
 
@@ -93,6 +101,8 @@ struct bcube_global_struct
 
 	//optimize delocked...
 	std::vector<node_item*> recv_chain;
+
+	unlock_recv_tensor *header, *tail;
 
 
 	~bcube_global_struct()

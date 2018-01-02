@@ -128,7 +128,7 @@ typedef struct
 } tensor_table_entry;
 
 
-typedef struct
+typedef struct _received_tensor_entry
 {
 	std::string tensor_name;/*tensor name*/
 	std::size_t tensor_nums;/*number of element*/

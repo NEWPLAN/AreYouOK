@@ -145,11 +145,7 @@ static void setup_node(bcube_struct& bcube_s)
 	return;
 
 }
-//static std::atomic_int redcuecount(0);
-//static std::atomic_int encodecount(0);
-//static std::atomic_int recvcount[20];
-//static std::atomic_int sendcount[20];
-/*加载所有的网络节点*/
+
 /*
 12.12.10.XXX
 12.12.11.XXX
@@ -248,13 +244,9 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 		printf("fatal error in send out data can not be empty\n");
 		exit(-1);
 	}
-
-
 	{
 
 		msg_struct* msg = (msg_struct*)(ctx->buffer);
-		//char* name = (char*)msg + sizeof(msg_struct);
-		//printf("send to %d count %d\n", msg->rank, ++sendcount[ msg->rank]);
 		msg->rank = current_node_rank;
 	}
 
@@ -745,7 +737,7 @@ static void on_disconnect(struct rdma_cm_id *id)
 	free(ctx);
 }
 
-static void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _recv_chain)
+void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _recv_chain)
 {
 	auto& recv_chain = _recv_chain;
 
@@ -777,7 +769,8 @@ static void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_ite
 						received_tensor_entry e;
 						show_msg(new_msg);
 						tensor_msg::decode(e, new_msg);
-						insert_to_recv_queue(bgs, e);
+						unlock_insert_to_recv_queue(bgs, e);
+						//insert_to_recv_queue(bgs, e);
 						data_len += ((msg_struct*)new_msg)->msg_length;
 					}
 				}
@@ -788,7 +781,8 @@ static void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_ite
 					received_tensor_entry e;
 					show_msg(new_msg);
 					tensor_msg::decode(e, new_msg);
-					insert_to_recv_queue(bgs, e);
+					//insert_to_recv_queue(bgs, e);
+					unlock_insert_to_recv_queue(bgs, e);
 					new_msg = nullptr;
 
 				}
@@ -857,18 +851,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	//auto& fd_vect = bgs.bcube_s.recv_rdma_cm_id;
 	//int fd_num = fd_vect.size();
 	rdma_server_establisted = true;
-	bool enable_unlock = false;
-	if (enable_unlock)
-	{
-		do
-		{
-			std::this_thread::sleep_for(std::chrono::seconds(1));
-			//here for sleep...
-		}
-		while (!bgs.shut_down);
-	}
-	else
-		recv_tensor_from_list(bgs, recv_chain);
+	recv_tensor_from_list(bgs, recv_chain);
 
 
 //
@@ -1243,37 +1226,32 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 			node_item* nit = get_new_node();
 			nit->data_ptr = (char*)tmp_msg;
 			tmp_msg->rank = to_one_node.node_id;
-
-			//printf("append to list will send to %d: %s,\t send len=%d--------\n", tmp_msg->rank, e.tensor_name.c_str(), encode_len);
-			if (0)
 			{
-				{
-					msg_struct* msg = (msg_struct*)tmp_msg;
-					char* name = (char*)msg + sizeof(msg_struct);
-					char* data = name + msg->name_len;
-					char tmp = *data;
-					*data = 0;
-					printf("append to list will send to node %d tensor name is %s, msg_len = %d, by thread %ld\n", msg->rank, name, msg->msg_length, pthread_self());
-					*data = tmp;
-				}
-			}
-			{
-				//std::lock_guard<std::mutex> append_lock(rdma_send_mutex);
 				bs.topo[0][to_one_node.node_id].send_list->next = nit;
 				bs.topo[0][to_one_node.node_id].send_list = nit;
-				//printf("encoded %d \n", ++encodecount);
 			}
-
-			//to_one_node.send_list->next = nit;
-			//to_one_node.send_list = nit;
-
-
-//			std::free((char*)tmp_msg);
 			tmp_msg = nullptr;
 		}
 	}
 
 
+}
+
+
+static void unlock_insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
+{
+
+	auto& tailer = bgs.tailer;
+	auto new_node = new unlock_recv_tensor(rs_e);
+	if (new_node == nullptr)
+	{
+		printf("fatal error in get unlocked recv_tensor handler\n");
+		exit(-1);
+	}
+	tailer->next = new_node;
+	tailer = new_node;
+
+	return;
 }
 
 #endif

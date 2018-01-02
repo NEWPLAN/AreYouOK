@@ -94,6 +94,12 @@ static  int TYPE_SIZE[] =
 void bcube_do_steps(bcube_global_struct&);
 void bg_loops(bcube_global_struct& bgs)
 {
+	{
+		bgs.header = new unlock_recv_tensor();
+		bgs.tail = bgs.header;
+		bgs.header->next = nullptr;
+	}
+
 #if HAVE_RDMA
 	rdma_bcube_init(bgs.bcube_s, bgs);
 #else
@@ -135,7 +141,186 @@ void bcube_all_init_once(bcube_global_struct& gs)
 	}
 }
 
-bool bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatter)
+bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatter)
+{
+
+	auto& header = bgs.header;
+	auto& tensor_receive = bgs.receiv_tensor;
+
+	int counts = 5 * 4;
+	{
+		while ((header->next != nullptr) && counts > 0)
+		{
+			auto& new_header = header->next;
+			delete header;
+			header = new_header;
+			std::string& new_tensor_name = (header->recv_tensor).tensor_name;
+			counts--;
+			auto it = tensor_receive.find(new_tensor_name);
+			if (it != tensor_receive.end())
+			{
+				auto& vec_msg = it->second;
+				vec_msg.push_back(std::move(header->recv_tensor));
+			}
+			else
+			{
+				std::vector<received_tensor_entry> msg_record;
+				msg_record.push_back(std::move(header->recv_tensor));
+				tensor_receive.emplace(std::make_pair(name, std::move(msg_record)));
+			}
+		}
+
+	}
+	auto tensor_name = e.tensor_name;
+	std::vector<received_tensor_entry> rcv_tensor;
+	{
+		//std::lock_guard<std::mutex> rece_lock(bgs.tensor_recv_mutex);
+		int find_tensor_size = 0;
+		auto& tensor_receive = bgs.receiv_tensor;
+		auto find_tensor = tensor_receive.find(tensor_name);
+		if (find_tensor == tensor_receive.end())return false;/*not ready, return now*/
+		find_tensor_size = (find_tensor->second).szie();
+		if (find_tensor_size < 4)return false;/*not ready, return now*/
+		if (find_tensor_size > 4)
+		{
+			printf("fatal error: find more than 4 tensor in reduce...\n");
+			exit(-1);
+		}
+		rcv_tensor = std::move(find_tensor->second);
+		tensor_receive.erase(find_tensor);
+	}
+	if (e.tensor_ops == ALLREDUCE)
+	{
+		for (auto it = rcv_tensor.begin(); it != rcv_tensor.end(); it++)
+		{
+			auto tensor_counts = it->tensor_nums;
+			auto start_position = it->start_position;
+			auto e_tensor_ptr = e.tensor_data;
+			auto type_size = TYPE_SIZE[e.tensor_type];
+			auto block_size = e.block_size;
+			auto dest_tensor_ptr = (char*)e_tensor_ptr + start_position * type_size * block_size;
+			for (size_t addnum = 0; addnum < tensor_counts; addnum++)
+			{
+				switch (e.tensor_type)
+				{
+					case T_VOID:
+						{
+							perror("error: unknown tensor type(void)\n");
+						}
+						break;
+					case T_BOOL:
+						{
+							perror("error: bool is not ready for scatter and gather\n");
+						}
+						break;
+					case T_UINIT8:
+						{
+							auto add_pos = (uint8_t*)dest_tensor_ptr;
+							auto tensor_ptr = (uint8_t*)(it->receive_ptr);
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_INIT8:
+						{
+							auto add_pos = (int8_t*)dest_tensor_ptr;
+							auto tensor_ptr = (int8_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_UINT16:
+						{
+							auto add_pos = (uint16_t*)dest_tensor_ptr;
+							auto tensor_ptr = (uint16_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_INT16:
+						{
+							auto add_pos = (int16_t*)dest_tensor_ptr;
+							auto tensor_ptr = (int16_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_UINT32:
+						{
+							auto add_pos = (uint32_t*)dest_tensor_ptr;
+							auto tensor_ptr = (uint32_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_INT32:
+						{
+							auto add_pos = (int32_t*)dest_tensor_ptr;
+							auto tensor_ptr = (int32_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_UINT64:
+						{
+							auto add_pos = (uint64_t*)dest_tensor_ptr;
+							auto tensor_ptr = (uint64_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_INT64:
+						{
+							auto add_pos = (int64_t*)dest_tensor_ptr;
+							auto tensor_ptr = (int64_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_FLOAT32:
+						{
+							auto add_pos = (float_t*)dest_tensor_ptr;
+							auto tensor_ptr = (float_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					case T_FLOAT64:
+						{
+							auto add_pos = (double_t*)dest_tensor_ptr;
+							auto tensor_ptr = (double_t*)it->receive_ptr;
+							add_pos[addnum] = is_scatter ? (add_pos[addnum] + tensor_ptr[addnum]) : tensor_ptr[addnum];
+						}
+						break;
+					default:
+						{
+							printf("unknown type\n");
+							exit(0);
+							break;
+						}
+				}
+			}
+			{
+				/*release reources*/
+				std::free((char*)(it->receive_ptr));
+				//printf("in allreduce: free %p\n", it->receive_ptr);
+				it->receive_ptr = nullptr;
+			}
+		}
+		return true;
+
+	}
+	else if (e.tensor_ops == ALLGATHER || e.tensor_ops == BROADCAST)
+	{
+		for (auto it = rcv_tensor.begin(); it != rcv_tensor.end(); it++)
+		{
+			for (size_t index = 0; index < it->gather_ptr.size(); index++)
+			{
+				auto& _a_tensor = e.gather_tensor[it->start_position + index];
+				std::free((char*)(_a_tensor.tensor_ptr));
+				_a_tensor.tensor_ptr = it->gather_ptr[index].tensor_ptr;
+				_a_tensor.tensor_shape = it->gather_ptr[index].tensor_shape;
+			}
+		}
+	}
+	return true;
+
+
+
+}
+
+bool _bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_scatter)
 {
 	auto tensor_name = e.tensor_name;
 	std::vector<received_tensor_entry> rcv_tensor;
@@ -495,19 +680,16 @@ void bcube_do_steps(bcube_global_struct& bgs)
 		auto& last_stage_tensor = unfinished_vect[unfin_size - 1];
 		for (auto it = last_stage_tensor.begin(); it != last_stage_tensor.end();)
 		{
-			if (bcube_reduce(bgs, *it, false))
+			//if (bcube_reduce(bgs, *it, false))
+			if (new_bcube_reduce(bgs, *it, false))
 			{
 
 				finished_tensor(*it);
-				/*show_tensor(*it);
-				release_src(*it);*/
-				//release_src(*it);
 				it = last_stage_tensor.erase(it);
 			}
 			else
 			{
 				it++;
-				//tmp_tensor_table.push_back(std::move(*it));
 			}
 		}
 		//last_stage_tensor = std::move(tmp_tensor_table);
@@ -523,8 +705,9 @@ void bcube_do_steps(bcube_global_struct& bgs)
 		for (auto it = step_it.begin(); it != step_it.end();)
 		{
 			//printf("it sz = %ld name  = %s  \n", step_it.size(), it->tensor_name.c_str());
-			bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
-			if (is_reduce)
+			//bool is_reduce = bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false);
+			//if (is_reduce)
+			if (new_bcube_reduce(bgs, *it, (unfin_index < (unfin_size / 2)) ? true : false))
 			{
 				/*copy to the next stage*/
 				it->tensor_name += std::to_string(unfin_index + 1);
