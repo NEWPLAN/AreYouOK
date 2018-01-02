@@ -53,7 +53,7 @@ def conv_model(feature, target, mode):
 
     with tf.variable_scope('conv_layer1_3'):
         h_conv1_3 = layers.conv2d(
-            h_pool1_2, 256, kernel_size=[5, 5], activation_fn=tf.nn.relu)
+            h_pool1_2, 32, kernel_size=[5, 5], activation_fn=tf.nn.relu)
         h_pool1_3 = tf.nn.max_pool(
             h_conv1_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
