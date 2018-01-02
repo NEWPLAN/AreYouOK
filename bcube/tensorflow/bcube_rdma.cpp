@@ -6,7 +6,7 @@
 #include <rdma/rdma_cma.h>
 
 //void rc_die(const char *reason);
-const size_t BUFFER_SIZE = 512 * 1024 * 1024 + 1;
+const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
 #define TIMEOUT_IN_MS 500
 #define TEST_NZ(x) do { if ( (x)) rc_die("error: " #x " failed (returned non-zero)." ); } while (0)
 #define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
