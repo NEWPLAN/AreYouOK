@@ -98,7 +98,6 @@ void bg_loops(bcube_global_struct& bgs)
 		received_tensor_entry e;
 		bgs.header = new unlock_recv_tensor(e);
 		bgs.tail = bgs.header;
-		bgs.header->next = nullptr;
 	}
 
 #if HAVE_RDMA

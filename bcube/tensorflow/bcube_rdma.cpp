@@ -1248,6 +1248,8 @@ static void unlock_insert_to_recv_queue(bcube_global_struct& bgs, received_tenso
 		printf("fatal error in get unlocked recv_tensor handler\n");
 		exit(-1);
 	}
+	static int index = 0;
+	printf("%d insert into list....\n", index++);
 	tailer->next = new_node;
 	tailer = new_node;
 
