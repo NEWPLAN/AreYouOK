@@ -745,7 +745,7 @@ static void on_disconnect(struct rdma_cm_id *id)
 	free(ctx);
 }
 
-static void recv_tensor_from_list(std::vector<node_item*>& _recv_chain)
+static void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _recv_chain)
 {
 	auto& recv_chain = _recv_chain;
 
@@ -868,7 +868,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 		while (!bgs.shut_down);
 	}
 	else
-		recv_tensor_from_list(recv_chain);
+		recv_tensor_from_list(bgs, recv_chain);
 
 
 //
