@@ -41,30 +41,30 @@ def conv_model(feature, target, mode):
 
     with tf.variable_scope('conv_layer1_1'):
         h_conv1_1 = layers.conv2d(
-            h_pool1, 32, kernel_size=[5, 5], activation_fn=tf.nn.relu)
+            h_pool1, 64, kernel_size=[5, 5], activation_fn=tf.nn.relu)
         h_pool1_1 = tf.nn.max_pool(
             h_conv1_1, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     with tf.variable_scope('conv_layer1_2'):
         h_conv1_2 = layers.conv2d(
-            h_pool1_1, 32, kernel_size=[5, 5], activation_fn=tf.nn.relu)
+            h_pool1_1, 128, kernel_size=[5, 5], activation_fn=tf.nn.relu)
         h_pool1_2 = tf.nn.max_pool(
             h_conv1_2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     with tf.variable_scope('conv_layer1_3'):
         h_conv1_3 = layers.conv2d(
-            h_pool1_2, 32, kernel_size=[5, 5], activation_fn=tf.nn.relu)
+            h_pool1_2, 256, kernel_size=[5, 5], activation_fn=tf.nn.relu)
         h_pool1_3 = tf.nn.max_pool(
             h_conv1_3, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
 
     # Second conv layer will compute 64 features for each 5x5 patch.
     with tf.variable_scope('conv_layer2'):
         h_conv2 = layers.conv2d(
-            h_pool1_3, 64, kernel_size=[5, 5], activation_fn=tf.nn.relu)
+            h_pool1_3, 512, kernel_size=[5, 5], activation_fn=tf.nn.relu)
         h_pool2 = tf.nn.max_pool(
             h_conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
         # reshape tensor into a batch of vectors
-        h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
+        h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 512])
 
     # Densely connected layer with 1024 neurons.
     h_fc1 = layers.dropout(
