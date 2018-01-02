@@ -95,7 +95,8 @@ void bcube_do_steps(bcube_global_struct&);
 void bg_loops(bcube_global_struct& bgs)
 {
 	{
-		bgs.header = new unlock_recv_tensor();
+		received_tensor_entry e;
+		bgs.header = new unlock_recv_tensor(e);
 		bgs.tail = bgs.header;
 		bgs.header->next = nullptr;
 	}
