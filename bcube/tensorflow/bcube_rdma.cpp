@@ -635,7 +635,7 @@ static void *send_poll_cq(void *rtp)
 	return NULL;
 }
 
-
+static void unlock_insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e);
 
 
 
