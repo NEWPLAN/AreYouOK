@@ -45,7 +45,7 @@ const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
 static std::atomic_bool rdma_server_establisted(false);
 static std::atomic_bool rdma_client_establisted(false);
 
-static bool enable_padding = false;
+static bool enable_padding = true;
 
 //static std::mutex rdma_send_mutex;
 //static std::mutex rdma_recv_mutex;
