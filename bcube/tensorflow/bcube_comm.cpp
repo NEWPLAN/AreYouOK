@@ -100,11 +100,12 @@ static void topology_init(bcube_struct& bcube_s)
 	node_counts(bcube_s);
 	
 	FILE* fp=fopen("/var/topo.txt","r");
+	fp=NULL;
 	if(fp==NULL)
 	{
 		for (int leve = 0; leve < bcube_s.bcube_level; leve++)
 		{
-			std::string ip_addr = "192.168.";
+			std::string ip_addr = "12.12.";
 			std::string leve_str = std::to_string((leve + 10));
 			std::vector<node> tp;/*each level*/
 			node tmp_node;
@@ -112,7 +113,7 @@ static void topology_init(bcube_struct& bcube_s)
 
 			for (int nodenum = 0; nodenum < bcube_s.bcube_node_count; nodenum++)
 			{
-				tmp_node.ip = ip_addr + std::to_string(nodenum + 10);
+				tmp_node.ip = ip_addr + std::to_string(nodenum + 11);
 				tmp_node.node_index = nodenum;
 				tp.push_back(tmp_node);
 			}
