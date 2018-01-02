@@ -1241,7 +1241,7 @@ void rdma_bcube_send(tensor_table_entry& e, bcube_struct& bs, int stage)
 static void unlock_insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry& rs_e)
 {
 
-	auto& tailer = bgs.tailer;
+	auto& tailer = bgs.tail;
 	auto new_node = new unlock_recv_tensor(rs_e);
 	if (new_node == nullptr)
 	{
