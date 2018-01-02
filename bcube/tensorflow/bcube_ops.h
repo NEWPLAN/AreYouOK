@@ -92,7 +92,7 @@ struct bcube_global_struct
 #endif
 
 	//optimize delocked...
-
+	std::vector<node_item*> recv_chain;
 
 
 	~bcube_global_struct()

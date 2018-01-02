@@ -328,7 +328,7 @@ static void batch_send(struct rdma_cm_id * id, node_item*& nit)
 	uint32_t send_byte = 0;
 
 	while (nit->next == nullptr)
-		std::this_thread::sleep_for(std::chrono::nanoseconds(1000));
+		std::this_thread::sleep_for(std::chrono::nanoseconds(100));
 
 	while (nit->next != nullptr)
 	{
@@ -744,65 +744,12 @@ static void on_disconnect(struct rdma_cm_id *id)
 	free(ctx->msg);
 	free(ctx);
 }
-static void recv_RDMA(bcube_global_struct& bgs)
+
+static void recv_tensor_from_list(std::vector<node_item*>& _recv_chain)
 {
-	bcube_struct& bs = bgs.bcube_s;
-	struct rdma_cm_event *event = NULL;
-	struct rdma_conn_param cm_params;
-	int connecting_client_cnt = 0;
-	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
-	printf("server is inited done (RDMA), waiting for %d client connecting....:)\n", client_counts);
-	build_params(&cm_params);
-	std::vector<node_item*> recv_chain;
+	auto& recv_chain = _recv_chain;
 
-	while (rdma_get_cm_event(bs.event_channel, &event) == 0)
-	{
-		struct rdma_cm_event event_copy;
-
-		memcpy(&event_copy, event, sizeof(*event));
-		rdma_ack_cm_event(event);
-
-		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
-		{
-			node_item* nit = get_new_node();
-			recv_chain.push_back(nit);
-			build_connection(event_copy.id, IS_SERVER, nit);
-			on_pre_conn(event_copy.id, IS_SERVER);
-			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
-		}
-		else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
-		{
-			on_connection(event_copy.id);
-			bs.recv_rdma_cm_id.push_back(event_copy.id);
-
-			struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(event_copy.id);
-			printf("client[%s,%d] is connecting (RDMA) now... \n", inet_ntoa(client_addr->sin_addr), client_addr->sin_port);
-			connecting_client_cnt++;
-			if (connecting_client_cnt == client_counts)
-				break;
-		}
-		else if (event_copy.event == RDMA_CM_EVENT_DISCONNECTED)
-		{
-			rdma_destroy_qp(event_copy.id);
-			on_disconnect(event_copy.id);
-			rdma_destroy_id(event_copy.id);
-			connecting_client_cnt--;
-			if (connecting_client_cnt == 0)
-				break;
-		}
-		else
-		{
-			rc_die("unknown event server\n");
-		}
-	}
-	printf("%d clients have connected to my node (RDMA), ready to receiving loops\n", client_counts);
-
-	int msg_len = sizeof(msg_struct);
-	auto& fd_vect = bgs.bcube_s.recv_rdma_cm_id;
-	int fd_num = fd_vect.size();
-	rdma_server_establisted = true;
 	msg_struct msg_buf;
-	int print_loops = 0;
 	while (true)
 	{
 		for (auto& recv_list : recv_chain)
@@ -850,6 +797,80 @@ static void recv_RDMA(bcube_global_struct& bgs)
 			}
 		}
 	}
+}
+
+static void recv_RDMA(bcube_global_struct& bgs)
+{
+	bcube_struct& bs = bgs.bcube_s;
+	struct rdma_cm_event *event = NULL;
+	struct rdma_conn_param cm_params;
+	int connecting_client_cnt = 0;
+	int client_counts = (bs.bcube0_size - 1) * bs.bcube_level;
+	printf("server is inited done (RDMA), waiting for %d client connecting....:)\n", client_counts);
+	build_params(&cm_params);
+	//std::vector<node_item*> recv_chain;
+	auto& recv_chain = bsg.recv_chain;
+
+	while (rdma_get_cm_event(bs.event_channel, &event) == 0)
+	{
+		struct rdma_cm_event event_copy;
+
+		memcpy(&event_copy, event, sizeof(*event));
+		rdma_ack_cm_event(event);
+
+		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
+		{
+			node_item* nit = get_new_node();
+			recv_chain.push_back(nit);
+			build_connection(event_copy.id, IS_SERVER, nit);
+			on_pre_conn(event_copy.id, IS_SERVER);
+			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
+		}
+		else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
+		{
+			on_connection(event_copy.id);
+			bs.recv_rdma_cm_id.push_back(event_copy.id);
+
+			struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(event_copy.id);
+			printf("client[%s,%d] is connecting (RDMA) now... \n", inet_ntoa(client_addr->sin_addr), client_addr->sin_port);
+			connecting_client_cnt++;
+			if (connecting_client_cnt == client_counts)
+				break;
+		}
+		else if (event_copy.event == RDMA_CM_EVENT_DISCONNECTED)
+		{
+			rdma_destroy_qp(event_copy.id);
+			on_disconnect(event_copy.id);
+			rdma_destroy_id(event_copy.id);
+			connecting_client_cnt--;
+			if (connecting_client_cnt == 0)
+				break;
+		}
+		else
+		{
+			rc_die("unknown event server\n");
+		}
+	}
+	printf("%d clients have connected to my node (RDMA), ready to receiving loops\n", client_counts);
+
+	//int msg_len = sizeof(msg_struct);
+	//auto& fd_vect = bgs.bcube_s.recv_rdma_cm_id;
+	//int fd_num = fd_vect.size();
+	rdma_server_establisted = true;
+	if (enable_unlock)
+	{
+		do
+		{
+			std::this_thread::sleep_for(std::chrono::seconds(1));
+			//here for sleep...
+		}
+		while (!shut_down);
+	}
+	else
+		recv_tensor_from_list(recv_chain);
+
+
+//
 	printf("RDMA recv loops exit now...\n");
 	return;
 }
