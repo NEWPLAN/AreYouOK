@@ -64,7 +64,7 @@ def conv_model(feature, target, mode):
         h_pool2 = tf.nn.max_pool(
             h_conv2, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
         # reshape tensor into a batch of vectors
-        h_pool2_flat = tf.reshape(h_pool2, [-1, 10 * 10 * 512])
+        h_pool2_flat = tf.reshape(h_pool2, [-1, 7 * 7 * 64])
 
     # Densely connected layer with 1024 neurons.
     h_fc1 = layers.dropout(
