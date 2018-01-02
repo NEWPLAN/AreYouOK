@@ -151,7 +151,7 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 	{
 		while ((header->next != nullptr) && counts > 0)
 		{
-			auto& new_header = header->next;
+			auto new_header = header->next;
 			delete header;
 			header = new_header;
 			std::string new_tensor_name = (header->recv_tensor).tensor_name;
