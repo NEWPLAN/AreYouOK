@@ -180,7 +180,11 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 		auto find_tensor = tensor_receive.find(tensor_name);
 		if (find_tensor == tensor_receive.end())return false;/*not ready, return now*/
 		find_tensor_size = (find_tensor->second).size();
-		if (find_tensor_size < 4)return false;/*not ready, return now*/
+		if (find_tensor_size < 4)
+		{
+			printf("less than 4\n");
+			return false;/*not ready, return now*/
+		}
 		if (find_tensor_size > 4)
 		{
 			printf("fatal error: find more than 4 tensor in reduce...\n");

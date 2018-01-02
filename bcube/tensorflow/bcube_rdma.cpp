@@ -1249,7 +1249,7 @@ static void unlock_insert_to_recv_queue(bcube_global_struct& bgs, received_tenso
 		exit(-1);
 	}
 	static int index = 0;
-	printf("%d insert into list....\n", index++);
+	//printf("%d insert into list....\n", index++);
 	tailer->next = new_node;
 	tailer = new_node;
 
