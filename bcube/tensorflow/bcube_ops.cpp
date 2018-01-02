@@ -155,7 +155,7 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 			delete header;
 			header = new_header;
 			std::string new_tensor_name = (header->recv_tensor).tensor_name;
-			std::cout << new_tensor_name << std::endl;
+			//std::cout << new_tensor_name << std::endl;
 			counts--;
 			auto it = tensor_receive.find(new_tensor_name);
 			if (it != tensor_receive.end())
@@ -183,7 +183,7 @@ bool new_bcube_reduce(bcube_global_struct& bgs, tensor_table_entry& e, bool is_s
 		find_tensor_size = (find_tensor->second).size();
 		if (find_tensor_size < 4)
 		{
-			printf("less than 4\n");
+			//printf("less than 4\n");
 			return false;/*not ready, return now*/
 		}
 		if (find_tensor_size > 4)
