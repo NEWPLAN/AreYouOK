@@ -809,7 +809,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	printf("server is inited done (RDMA), waiting for %d client connecting....:)\n", client_counts);
 	build_params(&cm_params);
 	//std::vector<node_item*> recv_chain;
-	auto& recv_chain = bsg.recv_chain;
+	auto& recv_chain = bgs.recv_chain;
 
 	while (rdma_get_cm_event(bs.event_channel, &event) == 0)
 	{
@@ -857,6 +857,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 	//auto& fd_vect = bgs.bcube_s.recv_rdma_cm_id;
 	//int fd_num = fd_vect.size();
 	rdma_server_establisted = true;
+	bool enable_unlock = false;
 	if (enable_unlock)
 	{
 		do
