@@ -39,6 +39,7 @@ const size_t BUFFER_SIZE = 50 * 1024 * 1024 + 1;
 #include <signal.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <stdlib.h>
 
 #define IS_CLIENT false
 #define IS_SERVER true
@@ -1115,7 +1116,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 		{
 			node_item* nit = get_new_node();
 			recv_chain.push_back(nit);
-			build_connection(event_copy.id, IS_SERVER, nit);
+			_build_connection(event_copy.id, IS_SERVER, nit);
 			_on_pre_conn(event_copy.id);
 			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 		}
@@ -1235,7 +1236,7 @@ static void rdma_client_init(bcube_struct& bs)
 			struct rdma_cm_event *event = NULL;
 			struct rdma_conn_param cm_params;
 
-			build_params(&cm_params);
+			_build_params(&cm_params);
 			while (rdma_get_cm_event(ec, &event) == 0)
 			{
 				struct rdma_cm_event event_copy;
