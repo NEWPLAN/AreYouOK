@@ -1058,7 +1058,8 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 					std::free(free_tmp);
 					free_tmp = nullptr;
 				}
-				if (enable_padding)
+
+				if (1)
 				{
 					uint32_t data_len = 0;
 					void* new_msg = nullptr;
