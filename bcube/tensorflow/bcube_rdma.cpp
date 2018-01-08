@@ -950,7 +950,7 @@ static void _on_pre_conn(struct rdma_cm_id *id)
 
 	for (uint32_t index = 0; index < MAX_CONCURRENCY; index++)
 	{
-		log_info("post recv index : %u\n", index);
+		//log_info("post recv index : %u\n", index);
 		_post_receive(id, index);
 	}
 }
@@ -1042,6 +1042,7 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 	auto& recv_chain = _recv_chain;
 
 	msg_struct msg_buf;
+	while (true)std::this_thread::sleep_for(std::chrono::seconds(1));
 	while (true)
 	{
 		for (auto& recv_list : recv_chain)
