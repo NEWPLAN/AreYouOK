@@ -98,7 +98,7 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 		*tensor_data = 0;
 		e.tensor_name = std::string(tensor_name);
 		*tensor_data = tmp_char;
-		printf("check 2\n");
+		printf("check 2,%s\n", e.tensor_name.c_str());
 
 		e.start_position = msg_tp->start_pos;
 		e.tensor_nums = msg_tp->nums;
