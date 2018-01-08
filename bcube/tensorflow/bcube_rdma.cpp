@@ -547,7 +547,8 @@ static void* corcurency_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 						ctx->peer_rkey[index] = ctx->k_exch[1]->key_info[index].rkey;
 						struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 						printf("client[%s,%d] to ", inet_ntoa(client_addr->sin_addr), client_addr->sin_port);
-						printf("server ack %d: %p\n", index, ctx->peer_addr[index]);
+						printf("server ack %d: %p  ", index, ctx->peer_addr[index]);
+						printf("my buffer addr: %d %p\n", index, ctx->buffer_mr[index]->addr);
 					}
 				} break;
 			default:
@@ -616,6 +617,7 @@ static node_item* concurrency_send_by_RDMA(struct ibv_wc *wc, node_item* nit, in
 						struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(id);
 						printf("server[%s,%d] to ", inet_ntoa(client_addr->sin_addr), client_addr->sin_port);
 						printf("client buffer %d: %p\n", index, ctx->peer_addr[index]);
+						printf("my ach addr: %d %p\n", index, ctx->ack_mr[index]->addr);
 					}
 					/**send one tensor...**/
 					nit = send_tensor(id, nit, 0);
