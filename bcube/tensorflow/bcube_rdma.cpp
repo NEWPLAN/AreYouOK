@@ -838,7 +838,7 @@ static void *send_poll_cq(void *rtp)
 		}
 		if (mem_used)
 		{
-			printf("mem_used : %d\n", mem_used);
+			//printf("mem_used : %d\n", mem_used);
 			//struct rdma_cm_id *id = (struct rdma_cm_id *)((wc[index])->wr_id);
 			struct context *ctx = (struct context *)id->context;
 			for (mem_used; mem_used < MAX_CONCURRENCY; mem_used++)
