@@ -6,7 +6,7 @@
 #if HAVE_RDMA
 #include <rdma/rdma_cma.h>
 
-#define MAX_CONCURRENCY 5
+#define MAX_CONCURRENCY 2
 
 typedef struct _data_list_
 {
