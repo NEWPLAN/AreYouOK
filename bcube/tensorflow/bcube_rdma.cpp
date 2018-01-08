@@ -545,6 +545,7 @@ static void* corcurency_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 					{
 						ctx->peer_addr[index] = ctx->k_exch[1]->key_info[index].addr;
 						ctx->peer_rkey[index] = ctx->k_exch[1]->key_info[index].rkey;
+						printf("server ack %d: %p\n", index, ctx->peer_addr[index]);
 					}
 				} break;
 			default:
@@ -610,6 +611,7 @@ static node_item* concurrency_send_by_RDMA(struct ibv_wc *wc, node_item* nit, in
 						//reserved the (buffer)key info from server.
 						ctx->peer_addr[index] = ctx->k_exch[1]->key_info[index].addr;
 						ctx->peer_rkey[index] = ctx->k_exch[1]->key_info[index].rkey;
+						printf("client buffer %d: %p\n", index, ctx->peer_addr[index]);
 					}
 					/**send one tensor...**/
 					nit = send_tensor(id, nit, 0);
@@ -830,6 +832,7 @@ static void *send_poll_cq(void *rtp)
 		}
 		if (mem_used)
 		{
+			printf("mem_used : %d\n", mem_used);
 			//struct rdma_cm_id *id = (struct rdma_cm_id *)((wc[index])->wr_id);
 			struct context *ctx = (struct context *)id->context;
 			for (mem_used; mem_used < MAX_CONCURRENCY; mem_used++)
@@ -913,10 +916,12 @@ static void _on_pre_conn(struct rdma_cm_id *id)
 	{
 		posix_memalign((void **)(&(new_ctx->buffer[index])), sysconf(_SC_PAGESIZE), BUFFER_SIZE);
 		TEST_Z(new_ctx->buffer_mr[index] = ibv_reg_mr(rc_get_pd(id), new_ctx->buffer[index], BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+		printf("buffer %d :%p\n", index, new_ctx->buffer_mr[index]->addr);
 
 		posix_memalign((void **)(&(new_ctx->ack[index])), sysconf(_SC_PAGESIZE), sizeof(_ack_));
 		TEST_Z(new_ctx->ack_mr[index] = ibv_reg_mr(rc_get_pd(id), new_ctx->ack[index],
 		                                sizeof(_ack_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+		printf("ack %d :%p\n", index, new_ctx->ack_mr[index]->addr);
 	}
 	log_info("register %d tx_buffer and rx_ack\n", MAX_CONCURRENCY);
 
