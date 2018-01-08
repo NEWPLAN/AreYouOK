@@ -109,7 +109,12 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 			auto block_size = *(int*)tensor_shape;
 			_part_tensor.tensor_shape = block_size;
 			_part_tensor.tensor_ptr = (void*)std::malloc(block_size * type_size);
-			assert(_part_tensor.tensor_ptr != nullptr);
+			if (_part_tensor.tensor_ptr == nullptr)
+			{
+				printf("fatal error in malloc will exit now\n");
+				exit(-1);
+			}
+			//assert(_part_tensor.tensor_ptr != nullptr);
 			std::memcpy(_part_tensor.tensor_ptr,
 			            tensor_data, block_size * type_size);
 			tensor_data += block_size * type_size;
