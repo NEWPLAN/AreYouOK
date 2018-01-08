@@ -778,7 +778,7 @@ static void *recv_poll_cq(void *rtp)
 				recv_data = corcurency_recv_by_RDMA(&wc[index], recv_len);
 				if (recv_data != nullptr)
 				{
-					printf("-----------recv datattttt------%u--------------\n", recv_len);
+					//printf("-----------recv datattttt------%u--------------\n", recv_len);
 					//received data, will append to recv_chain...
 					auto new_node = get_new_node();
 					new_node->data_ptr = (char*)recv_data;

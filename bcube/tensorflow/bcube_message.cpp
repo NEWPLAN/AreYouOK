@@ -187,7 +187,12 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		auto tensor_size = type_size * element_nums;
 		*total_length = sizeof(msg_struct) + e.tensor_name.length() + tensor_size + block_nums * sizeof(int);
 		auto malloc_ptr = (char*)std::malloc(*total_length);
-		assert(malloc_ptr != nullptr);
+		if (malloc_ptr == nullptr)
+		{
+			printf("error!!!!!!!!!!!!!!!!!!!!!!!\n");
+			exit(-1);
+		}
+		//assert(malloc_ptr != nullptr);
 		memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
 		msg_ptr->name_len = e.tensor_name.length();
@@ -206,7 +211,12 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		for (int block_index = 0; block_index < block_nums; block_index++)
 		{
 			*(shape_position) = e.gather_tensor[start_pos + block_index].tensor_shape;
-			assert(tensor_position < (malloc_ptr + msg_ptr->msg_length));
+			printf("shape:::::::::: %d\n", *(shape_position));
+			if (tensor_position >= (malloc_ptr + msg_ptr->msg_length))
+			{
+				printf("error@@@@@@@@@@@@@@@@@@@@@@@@\n");
+				exit(-1);
+			}
 			std::memcpy(tensor_position, e.gather_tensor[start_pos + block_index].tensor_ptr,
 			            (*shape_position)*type_size);
 			tensor_position += (*shape_position) * type_size;
