@@ -1042,7 +1042,7 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 	auto& recv_chain = _recv_chain;
 
 	msg_struct msg_buf;
-	while (true)std::this_thread::sleep_for(std::chrono::seconds(1));
+	//while (true)std::this_thread::sleep_for(std::chrono::seconds(1));
 	while (true)
 	{
 		for (auto& recv_list : recv_chain)
@@ -1079,11 +1079,14 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 				else*/
 				{
 					//insert into recv_tensor...
-					log_info("before decode : %u\n", recv_list->data_len);
+
 					void* new_msg = recv_list->data_ptr;
+					msg_struct* msg = (msg_struct*)new_msg;
 					received_tensor_entry e;
 					show_msg(new_msg);
+					log_info("before decode : data_length = %u, msg_len= %d\n", recv_list->data_len, msg->msg_length);
 					tensor_msg::decode(e, new_msg);
+					log_info("after decode\n");
 					//insert_to_recv_queue(bgs, e);
 					unlock_insert_to_recv_queue(bgs, e);
 					new_msg = nullptr;
