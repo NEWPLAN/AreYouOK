@@ -828,7 +828,7 @@ static void *send_poll_cq(void *rtp)
 		}
 		if (mem_used)
 		{
-			struct rdma_cm_id *id = (struct rdma_cm_id *)((wc[index])->wr_id);
+			//struct rdma_cm_id *id = (struct rdma_cm_id *)((wc[index])->wr_id);
 			struct context *ctx = (struct context *)id->context;
 			for (mem_used; mem_used < MAX_CONCURRENCY; mem_used++)
 			{
@@ -916,7 +916,7 @@ static void _on_pre_conn(struct rdma_cm_id *id)
 		TEST_Z(new_ctx->ack_mr[index] = ibv_reg_mr(rc_get_pd(id), new_ctx->ack[index],
 		                                sizeof(_ack_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
 	}
-	log_info("register %d tx_buffer and rx_ack\n", index);
+	log_info("register %d tx_buffer and rx_ack\n", MAX_CONCURRENCY);
 
 	{
 		posix_memalign((void **)(&(new_ctx->k_exch[0])), sysconf(_SC_PAGESIZE), sizeof(_key_exch));
