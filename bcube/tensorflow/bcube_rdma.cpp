@@ -5,8 +5,8 @@
 #if HAVE_RDMA
 #include <rdma/rdma_cma.h>
 
-//void rc_die(const char *reason);
-const size_t BUFFER_SIZE = 1024 * 1024 * 1024 + 1;
+//50 M for default size;
+const size_t BUFFER_SIZE = 50 * 1024 * 1024 + 1;
 #define TIMEOUT_IN_MS 500
 #define TEST_NZ(x) do { if ( (x)) rc_die("error: " #x " failed (returned non-zero)." ); } while (0)
 #define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
@@ -76,6 +76,32 @@ static void show_msg(void* row_data)
 	for (int ii = 0; ii < 3; ii++)
 		printf("%d ", ((int*)data)[ii]);
 	printf("\n");
+}
+
+void log_info(const char *format, ...)
+{
+	char now_time[32];
+	char s[1024];
+	char content[1024];
+	//char *ptr = content;
+	struct tm *tmnow;
+	struct timeval tv;
+	bzero(content, 1024);
+	va_list arg;
+	va_start (arg, format);
+	vsprintf (s, format, arg);
+	va_end (arg);
+
+	gettimeofday(&tv, NULL);
+	tmnow = localtime(&tv.tv_sec);
+
+	sprintf(now_time, "%04d/%02d/%02d %02d:%02d:%02d:%06ld ", \
+	        tmnow->tm_year + 1900, tmnow->tm_mon + 1, tmnow->tm_mday, tmnow->tm_hour, \
+	        tmnow->tm_min, tmnow->tm_sec, tv.tv_usec);
+
+	sprintf(content, "%s %s", now_time, s);
+	printf("%s", content);
+
 }
 
 #if HAVE_RDMA
@@ -208,6 +234,7 @@ static void insert_to_recv_queue(bcube_global_struct& bgs, received_tensor_entry
 }
 
 #ifdef HAVE_RDMA
+/**********************
 static void send_message(struct rdma_cm_id *id)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -228,7 +255,8 @@ static void send_message(struct rdma_cm_id *id)
 
 	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
-
+*********************/
+/********************
 static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -268,46 +296,49 @@ static void send_tensor(struct rdma_cm_id *id, char* buff, uint32_t len)
 	}
 	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
-
-static void post_receive_client(struct rdma_cm_id *id)
+*****************/
+static void _write_remote(struct rdma_cm_id *id, uint32_t len, uint32_t index)
 {
-	struct context *ctx = (struct context *)id->context;
-	struct ibv_recv_wr wr, *bad_wr = NULL;
+	struct context *new_ctx = (struct context *)id->context;
+
+	struct ibv_send_wr wr, *bad_wr = NULL;
 	struct ibv_sge sge;
+
 	memset(&wr, 0, sizeof(wr));
+
 	wr.wr_id = (uintptr_t)id;
-	wr.sg_list = &sge;
-	wr.num_sge = 1;
-	sge.addr = (uintptr_t)ctx->msg;
-	sge.length = sizeof(*ctx->msg);
-	sge.lkey = ctx->msg_mr->lkey;
-	TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
+
+	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
+	wr.send_flags = IBV_SEND_SIGNALED;
+	wr.imm_data = index;//htonl(index);
+	wr.wr.rdma.remote_addr = new_ctx->peer_addr[index];
+	wr.wr.rdma.rkey = new_ctx->peer_rkey[index];
+
+	if (len)
+	{
+		wr.sg_list = &sge;
+		wr.num_sge = 1;
+
+		sge.addr = (uintptr_t)new_ctx->buffer[index];
+		sge.length = len;
+		sge.lkey = new_ctx->buffer_mr[index]->lkey;
+	}
+
+	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-static void post_receive_server(struct rdma_cm_id *id)
+static void _post_receive(struct rdma_cm_id *id, uint32_t index)
 {
 	struct ibv_recv_wr wr, *bad_wr = NULL;
 	memset(&wr, 0, sizeof(wr));
-	wr.wr_id = (uintptr_t)id;
+	wr.wr_id = (uint64_t)id;
 	wr.sg_list = NULL;
 	wr.num_sge = 0;
+
 	TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
 
-static char* data_gene(int size)
-{
-	char* _data = (char*)malloc(size * sizeof(char) + 1);
-	_data[size] = 0;
-	char padding[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
-	for (int index = 0; index < size; index++)
-		_data[index] = padding[index % 10];
-	return _data;
-}
-
-static char* __send_str = NULL;
-#define _SEND_REAL_DATA_ 11
-
-
+/*************
 static void batch_send(struct rdma_cm_id * id, node_item*& nit)
 {
 	struct context *ctx = (struct context *)id->context;
@@ -440,8 +471,127 @@ static void* batch_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 	}
 	return _data;
 }
+**********/
+static void* corcurency_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
+{
+	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
+	struct context *ctx = (struct context *)id->context;
+	void* _data = nullptr;
+
+	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+	{
+		log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
+		log_info("imm_data is %d\n", wc->imm_data);
+		//uint32_t size = ntohl(wc->imm_data);
+		uint32_t index = wc->imm_data;
+		uint32_t size = *((uint32_t*)(ctx->buffer[index]));
+		char* recv_data_ptr = ctx->buffer[index] + sizeof(uint32_t);
+
+		recv_len = size;
+		_data = (void*)std::malloc(sizeof(char) * size);
+
+		if (_data == nullptr)
+		{
+			printf("fatal error in recv data malloc!!!!\n");
+			exit(-1);
+		}
+		std::memcpy(_data, recv_data_ptr, size);
+
+		_post_receive(id, wc->imm_data);
+		_ack_remote(id, wc->imm_data);
+
+	}
+	else if (wc->opcode == IBV_WC_RECV)
+	{
+		switch (ctx->k_exch[1]->id)
+		{
+			case MSG_MR:
+				{
+					log_info("recv MD5 is %llu\n", ctx->k_exch[1]->md5);
+					log_info("imm_data is %d\n", wc->imm_data);
+					for (int index = 0; index < MAX_CONCURRENCY; index++)
+					{
+						ctx->peer_addr[index] = ctx->k_exch[1]->key_info[index].addr;
+						ctx->peer_rkey[index] = ctx->k_exch[1]->key_info[index].rkey;
+					}
+				} break;
+			default:
+				break;
+		}
+	}
+	return _data;
+}
+
+static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, int index)
+{
+	struct context *ctx = (struct context *)id->context;
 
 
+	while (nit->next == nullptr)
+		std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+	{
+		/*release the old source*/
+		node_item* free_tp_node;
+		free_tp_node = nit;
+		nit = nit->next;
+		std::free(free_tp_node);
+	}
+	/*encode msg_length and buffer*/
+	uint32_t msg_len = ((msg_struct*)(nit->data_ptr))->msg_length;
+
+	if ((msg_len + sizeof(uint32_t)) > BUFFER_SIZE)
+	{
+		perror("fatal error, send msg length is too long\n");
+		exit(-1);
+	}
+
+	char* _buff = ctx->buffer[index];
+	std::memcpy(_buff, (char*)(&msg_len), sizeof(uint32_t));
+	_buff += sizeof(uint32_t);
+	std::memcpy(_buff, (char*)(nit->data_ptr), msg_len);
+	_write_remote(id, msg_len, index);
+
+	return nit;
+}
+
+static node_item* concurrency_send_by_RDMA(struct ibv_wc *wc, node_item* nit, int& mem_used)
+{
+	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
+	struct context *ctx = (struct context *)id->context;
+
+	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
+	{
+		log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
+		log_info("imm_data is %d\n", wc->imm_data);
+		_post_receive(id, wc->imm_data);
+		nit = send_tensor(id, nit, wc->imm_data);
+	}
+	else if (wc->opcode == IBV_WC_RECV)
+	{
+		switch (ctx->->k_exch[1]->id)
+		{
+			case MSG_MR:
+				{
+					log_info("recv MD5 is %llu\n", ctx->k_exch[1]->md5);
+					for (int index = 0; index < MAX_CONCURRENCY; index++)
+					{
+						//reserved the (buffer)key info from server.
+						ctx->peer_addr[index] = ctx->k_exch[1]->key_info[index].addr;
+						ctx->peer_rkey[index] = ctx->k_exch[1]->key_info[index].rkey;
+					}
+					/**send one tensor...**/
+					nit = send_tensor(id, nit, 0);
+					mem_used++;
+				}
+				break;
+			default:
+				break;
+		}
+	}
+	return nit;
+}
+
+/*******************
 static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
@@ -506,9 +656,9 @@ static node_item* send_by_RDMA(struct ibv_wc *wc, node_item* nit)
 	}
 	return nit;
 }
+***************************/
 
-
-
+/**************************
 static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
@@ -550,12 +700,12 @@ static void* recv_by_RDMA(struct ibv_wc *wc, node_item* nit)
 	}
 	return _data;
 }
-
+****************/
 
 static void *recv_poll_cq(void *rtp)
 {
 	struct ibv_cq *cq = NULL;
-	struct ibv_wc wc;
+	struct ibv_wc wc[MAX_CONCURRENCY * 2];
 	struct rdma_cm_id *id = ((_rdma_thread_pack_ *)rtp)->rdma_id;
 	node_item* nit = ((_rdma_thread_pack_ *)rtp)->nit;
 
@@ -570,17 +720,22 @@ static void *recv_poll_cq(void *rtp)
 		ibv_ack_cq_events(cq, 1);
 		TEST_NZ(ibv_req_notify_cq(cq, 0));
 
-		while (ibv_poll_cq(cq, 1, &wc))
+		int wc_num = ibv_poll_cq(cq, MAX_CONCURRENCY * 2, wc);
+
+		for (int index = 0; index < wc_num; index++)
 		{
-			if (wc.status == IBV_WC_SUCCESS)
+			if (wc[index].status == IBV_WC_SUCCESS)
 			{
+				/*****here to modified recv* wc---->wc[index]****/
 				void* recv_data = nullptr;
 				uint32_t recv_len;
-
-				if (enable_padding)
-					recv_data = batch_recv_by_RDMA(&wc, recv_len);
-				else
-					recv_data = recv_by_RDMA(&wc, nit);
+				/*
+								if (enable_padding)
+									recv_data = batch_recv_by_RDMA(&wc, recv_len);
+								else
+									recv_data = recv_by_RDMA(&wc, nit);
+				*/
+				recv_data = corcurency_recv_by_RDMA(&wc[index], recv_len);
 				if (recv_data != nullptr)
 				{
 					//received data, will append to recv_chain...
@@ -603,12 +758,16 @@ static void *recv_poll_cq(void *rtp)
 static void *send_poll_cq(void *rtp)
 {
 	struct ibv_cq *cq = NULL;
-	struct ibv_wc wc;
+	struct ibv_wc wc[MAX_CONCURRENCY * 2];
 	struct rdma_cm_id *id = ((_rdma_thread_pack_ *)rtp)->rdma_id;
 	node_item* nit = ((_rdma_thread_pack_ *)rtp)->nit;
 
+	std::free((_rdma_thread_pack_ *)rtp);
+
 	struct context *ctx = (struct context *)id->context;
 	void *ev_ctx = NULL;
+
+	int mem_used = 0;
 
 	while (1)
 	{
@@ -616,20 +775,35 @@ static void *send_poll_cq(void *rtp)
 		ibv_ack_cq_events(cq, 1);
 		TEST_NZ(ibv_req_notify_cq(cq, 0));
 
-		while (ibv_poll_cq(cq, 1, &wc))
+		int wc_num = ibv_poll_cq(cq, MAX_CONCURRENCY * 2, wc);
+
+		if (wc_num < 0)
 		{
-			if (wc.status == IBV_WC_SUCCESS)
+			perror("fatal error in ibv_poll_cq, -1");
+			exit(-1);
+		}
+
+		for (int index = 0; index < wc_num; index++)
+		{
+			if (wc[index].status == IBV_WC_SUCCESS)
 			{
-				if (enable_padding)
-					nit = bacth_send_by_RDMA(&wc, nit);
-				else
-					nit = send_by_RDMA(&wc, nit);
+				nit = concurrency_send_by_RDMA(&wc[index], nit);
 			}
 			else
 			{
 				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
 				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
 			}
+		}
+		if (mem_used)
+		{
+			struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc[index]->wr_id;
+			struct context *ctx = (struct context *)id->context;
+			for (mem_used; mem_used < MAX_CONCURRENCY; mem_used++)
+			{
+				if (nit->next == nullptr) break;
+				nit = send_tensor(id, nit, mem_used);
+			}/*send used next buffer*/
 		}
 	}
 	return NULL;
@@ -647,7 +821,7 @@ static struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 	return ctx->pd;
 }
 
-static void build_params(struct rdma_conn_param *params)
+static void _build_params(struct rdma_conn_param *params)
 {
 	memset(params, 0, sizeof(*params));
 
@@ -656,13 +830,13 @@ static void build_params(struct rdma_conn_param *params)
 	params->retry_count = 7;
 }
 
-static void build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
+static void _build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
 {
 	struct context *s_ctx = (struct context *)malloc(sizeof(struct context));
 	s_ctx->ibv_ctx = id->verbs;
 	TEST_Z(s_ctx->pd = ibv_alloc_pd(s_ctx->ibv_ctx));
 	TEST_Z(s_ctx->comp_channel = ibv_create_comp_channel(s_ctx->ibv_ctx));
-	TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ibv_ctx, MIN_CQE, NULL, s_ctx->comp_channel, 0));
+	TEST_Z(s_ctx->cq = ibv_create_cq(s_ctx->ibv_ctx, MAX_CONCURRENCY * 2 + 10, NULL, s_ctx->comp_channel, 0));
 	TEST_NZ(ibv_req_notify_cq(s_ctx->cq, 0));
 	id->context = (void*)s_ctx;
 	if (is_server)
@@ -673,7 +847,7 @@ static void build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
 	}
 }
 
-static void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *id)
+static void _build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *id)
 {
 	struct context *ctx = (struct context *)id->context;
 	memset(qp_attr, 0, sizeof(*qp_attr));
@@ -681,60 +855,153 @@ static void build_qp_attr(struct ibv_qp_init_attr *qp_attr, struct rdma_cm_id *i
 	qp_attr->recv_cq = ctx->cq;
 	qp_attr->qp_type = IBV_QPT_RC;
 
-	qp_attr->cap.max_send_wr = 10;
-	qp_attr->cap.max_recv_wr = 10;
+	qp_attr->cap.max_send_wr = MAX_CONCURRENCY + 2;
+	qp_attr->cap.max_recv_wr = MAX_CONCURRENCY + 2;
 	qp_attr->cap.max_send_sge = 1;
 	qp_attr->cap.max_recv_sge = 1;
 }
 
-static void build_connection(struct rdma_cm_id *id, bool is_server, node_item* nit)
+static void _build_connection(struct rdma_cm_id *id, bool is_server, node_item* nit)
 {
 	struct ibv_qp_init_attr qp_attr;
-	build_context(id, is_server, nit);
-	build_qp_attr(&qp_attr, id);
+	_build_context(id, is_server, nit);
+	_build_qp_attr(&qp_attr, id);
 
 	struct context *ctx = (struct context *)id->context;
 	TEST_NZ(rdma_create_qp(id, ctx->pd, &qp_attr));
 }
 
-static void on_pre_conn(struct rdma_cm_id *id, bool is_server)
+static void _on_pre_conn(struct rdma_cm_id *id)
 {
-	struct context *ctx = (struct context *)id->context;
-	posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
-	TEST_Z(ctx->buffer_mr = ibv_reg_mr(rc_get_pd(id), ctx->buffer, BUFFER_SIZE,
-	                                   IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+	struct context *new_ctx = (struct context *)id->context;
 
-	posix_memalign((void **)&ctx->msg, sysconf(_SC_PAGESIZE), sizeof(*ctx->msg));
-	TEST_Z(ctx->msg_mr = ibv_reg_mr(rc_get_pd(id), ctx->msg, sizeof(*ctx->msg),
-	                                IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
 
+	for (int index = 0; index < MAX_CONCURRENCY; index++)
+	{
+		posix_memalign((void **)(&(new_ctx->buffer[index])), sysconf(_SC_PAGESIZE), BUFFER_SIZE);
+		TEST_Z(new_ctx->buffer_mr[index] = ibv_reg_mr(rc_get_pd(), new_ctx->buffer[index], BUFFER_SIZE, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+
+		posix_memalign((void **)(&(new_ctx->ack[index])), sysconf(_SC_PAGESIZE), sizeof(_ack_));
+		TEST_Z(new_ctx->ack_mr[index] = ibv_reg_mr(rc_get_pd(), new_ctx->ack[index],
+		                                sizeof(_ack_), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+	}
+	log_info("register %d tx_buffer and rx_ack\n", index);
+
+	{
+		posix_memalign((void **)(&(new_ctx->k_exch[0])), sysconf(_SC_PAGESIZE), sizeof(_key_exch));
+		TEST_Z(new_ctx->k_exch_mr[0] = ibv_reg_mr(rc_get_pd(), new_ctx->k_exch[0], sizeof(_key_exch), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+
+		posix_memalign((void **)(&(new_ctx->k_exch[1])), sysconf(_SC_PAGESIZE), sizeof(_key_exch));
+		TEST_Z(new_ctx->k_exch_mr[1] = ibv_reg_mr(rc_get_pd(), new_ctx->k_exch[1], sizeof(_key_exch), IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE));
+
+	}
+	log_info("register rx_k_exch (index:0) and tx_k_exch (index:1)\n");
+
+	struct ibv_recv_wr wr, *bad_wr = NULL;
+	struct ibv_sge sge;
+
+	memset(&wr, 0, sizeof(wr));
+
+	wr.wr_id = (uintptr_t)id;
+	wr.sg_list = &sge;
+	wr.num_sge = 1;
+
+	sge.addr = (uintptr_t)(new_ctx->k_exch[1]);
+	sge.length = sizeof(_key_exch);
+	sge.lkey = new_ctx->k_exch_mr[1]->lkey;
+
+
+
+	TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
+
+
+	for (uint32_t index = 0; index < MAX_CONCURRENCY; index++)
+	{
+		log_info("post recv index : %u\n", index);
+		_post_receive(id, index);
+	}
+}
+
+/**server on connection***/
+static void _on_connection(struct rdma_cm_id *id, , bool is_server)
+{
+	struct context *new_ctx = (struct context *)id->context;
+
+	int index = 0;
+
+	new_ctx->k_exch[0]->id = MSG_MR;
 	if (is_server)
-		post_receive_server(id);
+		new_ctx->k_exch[0]->md5 = 6666;
 	else
-		post_receive_client(id);
+		new_ctx->k_exch[0]->md5 = 5555;
+
+	log_info("k_exch md5 is %llu\n", new_ctx->k_exch[0]->md5);
+	if (is_server)
+	{
+		for (index = 0; index < MAX_CONCURRENCY; index++)
+		{
+			new_ctx->k_exch[0]->key_info[index].addr = (uintptr_t)(new_ctx->buffer_mr[index]->addr);
+			new_ctx->k_exch[0]->key_info[index].rkey = (new_ctx->buffer_mr[index]->rkey);
+		}
+
+	}
+	else
+	{
+		for (index = 0; index < MAX_CONCURRENCY; index++)
+		{
+			new_ctx->k_exch[0]->key_info[index].addr = (uintptr_t)(new_ctx->ack_mr[index]->addr);
+			new_ctx->k_exch[0]->key_info[index].rkey = (new_ctx->ack_mr[index]->rkey);
+		}
+
+	}
+
+
+	//send to myself info to peer
+	{
+		struct ibv_send_wr wr, *bad_wr = NULL;
+		struct ibv_sge sge;
+
+		memset(&wr, 0, sizeof(wr));
+
+		wr.wr_id = (uintptr_t)id;
+		wr.opcode = IBV_WR_SEND;
+		wr.sg_list = &sge;
+		wr.num_sge = 1;
+		wr.send_flags = IBV_SEND_SIGNALED;
+
+		sge.addr = (uintptr_t)(new_ctx->k_exch[0]);
+		sge.length = sizeof(_key_exch);
+		sge.lkey = new_ctx->k_exch_mr[0]->lkey;
+
+		TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
+	}
+	log_info("share my registed mem rx_buffer for peer write to\n");
 }
 
-static void on_connection(struct rdma_cm_id *id)
+
+
+static void _on_disconnect(struct rdma_cm_id *id)
 {
-	struct context *ctx = (struct context *)id->context;
+	struct context *new_ctx = (struct context *)id->context;
 
-	ctx->msg->id = MSG_MR;
-	ctx->msg->data.mr.addr = (uintptr_t)ctx->buffer_mr->addr;
-	ctx->msg->data.mr.rkey = ctx->buffer_mr->rkey;
+	for (int index = 0; index < MAX_CONCURRENCY; index++)
+	{
+		ibv_dereg_mr(new_ctx->buffer_mr[index]);
+		ibv_dereg_mr(new_ctx->ack_mr[index]);
 
-	send_message(id);
-}
+		free(new_ctx->buffer[index]);
+		free(new_ctx->ack[index]);
+	}
 
-static void on_disconnect(struct rdma_cm_id *id)
-{
-	struct context *ctx = (struct context *)id->context;
+	{
+		ibv_dereg_mr(new_ctx->k_exch_mr[0]);
+		ibv_dereg_mr(new_ctx->k_exch_mr[1]);
 
-	ibv_dereg_mr(ctx->buffer_mr);
-	ibv_dereg_mr(ctx->msg_mr);
+		free(new_ctx->k_exch[0]);
+		free(new_ctx->k_exch[1]);
+	}
 
-	free((char*)(ctx->buffer));
-	free(ctx->msg);
-	free(ctx);
+	free(new_ctx);
 }
 
 void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _recv_chain)
@@ -812,17 +1079,18 @@ static void recv_RDMA(bcube_global_struct& bgs)
 		memcpy(&event_copy, event, sizeof(*event));
 		rdma_ack_cm_event(event);
 
+
 		if (event_copy.event == RDMA_CM_EVENT_CONNECT_REQUEST)
 		{
 			node_item* nit = get_new_node();
 			recv_chain.push_back(nit);
 			build_connection(event_copy.id, IS_SERVER, nit);
-			on_pre_conn(event_copy.id, IS_SERVER);
+			_on_pre_conn(event_copy.id);
 			TEST_NZ(rdma_accept(event_copy.id, &cm_params));
 		}
 		else if (event_copy.event == RDMA_CM_EVENT_ESTABLISHED)
 		{
-			on_connection(event_copy.id);
+			_on_connection(event_copy.id, true);
 			bs.recv_rdma_cm_id.push_back(event_copy.id);
 
 			struct sockaddr_in* client_addr = (struct sockaddr_in *)rdma_get_peer_addr(event_copy.id);
@@ -834,7 +1102,7 @@ static void recv_RDMA(bcube_global_struct& bgs)
 		else if (event_copy.event == RDMA_CM_EVENT_DISCONNECTED)
 		{
 			rdma_destroy_qp(event_copy.id);
-			on_disconnect(event_copy.id);
+			_on_disconnect(event_copy.id);
 			rdma_destroy_id(event_copy.id);
 			connecting_client_cnt--;
 			if (connecting_client_cnt == 0)
@@ -944,8 +1212,8 @@ static void rdma_client_init(bcube_struct& bs)
 				rdma_ack_cm_event(event);
 				if (event_copy.event == RDMA_CM_EVENT_ADDR_RESOLVED)
 				{
-					build_connection(event_copy.id, IS_CLIENT, nullptr);
-					on_pre_conn(event_copy.id, IS_CLIENT);
+					_build_connection(event_copy.id, IS_CLIENT, nullptr);
+					_on_pre_conn(event_copy.id);
 					TEST_NZ(rdma_resolve_route(event_copy.id, TIMEOUT_IN_MS));
 				}
 				else if (event_copy.event == RDMA_CM_EVENT_ROUTE_RESOLVED)
@@ -963,18 +1231,17 @@ static void rdma_client_init(bcube_struct& bs)
 					out_send_list[bs.neighbor_info[lev][index].node_index] = nit;
 					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, send_poll_cq, (void*)rtp));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
+
+					{
+						_on_connection(event_copy.id, false);
+					}
 					break;
 				}
 				else if (event_copy.event == RDMA_CM_EVENT_REJECTED)
 				{
 					std::this_thread::sleep_for(std::chrono::milliseconds(100));
 					connect_count++;
-					struct context *ctx = (struct context *)event_copy.id->context;
-					ibv_dereg_mr(ctx->buffer_mr);
-					ibv_dereg_mr(ctx->msg_mr);
-					free(ctx->buffer);
-					free(ctx->msg);
-					free(ctx);
+					_on_disconnect(event_copy.id);
 					rdma_destroy_qp(event_copy.id);
 					rdma_destroy_id(event_copy.id);
 					rdma_destroy_event_channel(ec);
