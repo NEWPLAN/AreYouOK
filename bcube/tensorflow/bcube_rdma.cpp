@@ -38,6 +38,7 @@ const size_t BUFFER_SIZE = 50 * 1024 * 1024 + 1;
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <sys/time.h>
 
 #define IS_CLIENT false
 #define IS_SERVER true
@@ -337,6 +338,36 @@ static void _post_receive(struct rdma_cm_id *id, uint32_t index)
 
 	TEST_NZ(ibv_post_recv(id->qp, &wr, &bad_wr));
 }
+static void _ack_remote(struct rdma_cm_id *id, uint32_t index)
+{
+	struct context *new_ctx = (struct context *)id->context;
+
+	struct ibv_send_wr wr, *bad_wr = NULL;
+	struct ibv_sge sge;
+
+	memset(&wr, 0, sizeof(wr));
+
+	wr.wr_id = (uintptr_t)id;
+
+	wr.opcode = IBV_WR_RDMA_WRITE_WITH_IMM;
+	wr.send_flags = IBV_SEND_SIGNALED;
+	wr.imm_data = index;//htonl(index);
+	wr.wr.rdma.remote_addr = new_ctx->peer_addr[index];
+	wr.wr.rdma.rkey = new_ctx->peer_rkey[index];
+
+	new_ctx->ack[index]->index = index;
+
+	{
+		wr.sg_list = &sge;
+		wr.num_sge = 1;
+
+		sge.addr = (uintptr_t)new_ctx->ack[index];
+		sge.length = sizeof(_ack_);
+		sge.lkey = new_ctx->ack_mr[index]->lkey;
+	}
+
+	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
+}
 
 /*************
 static void batch_send(struct rdma_cm_id * id, node_item*& nit)
@@ -568,7 +599,7 @@ static node_item* concurrency_send_by_RDMA(struct ibv_wc *wc, node_item* nit, in
 	}
 	else if (wc->opcode == IBV_WC_RECV)
 	{
-		switch (ctx->->k_exch[1]->id)
+		switch (ctx->k_exch[1]->id)
 		{
 			case MSG_MR:
 				{
@@ -748,7 +779,7 @@ static void *recv_poll_cq(void *rtp)
 			}
 			else
 			{
-				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				printf("\nwc = %s\n", ibv_wc_status_str(wc[index].status));
 				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
 			}
 		}
@@ -787,11 +818,11 @@ static void *send_poll_cq(void *rtp)
 		{
 			if (wc[index].status == IBV_WC_SUCCESS)
 			{
-				nit = concurrency_send_by_RDMA(&wc[index], nit);
+				nit = concurrency_send_by_RDMA(&wc[index], nit, mem_used);
 			}
 			else
 			{
-				printf("\nwc = %s\n", ibv_wc_status_str(wc.status));
+				printf("\nwc = %s\n", ibv_wc_status_str(wc[index].status));
 				rc_die("poll_cq: status is not IBV_WC_SUCCESS");
 			}
 		}
