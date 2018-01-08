@@ -770,6 +770,7 @@ static void *recv_poll_cq(void *rtp)
 				recv_data = corcurency_recv_by_RDMA(&wc[index], recv_len);
 				if (recv_data != nullptr)
 				{
+					printf("-----------recv datattttt------%u--------------\n", recv_len);
 					//received data, will append to recv_chain...
 					auto new_node = get_new_node();
 					new_node->data_ptr = (char*)recv_data;
@@ -1059,7 +1060,7 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 					free_tmp = nullptr;
 				}
 
-				if (1)
+				/*if (enable_padding)
 				{
 					uint32_t data_len = 0;
 					void* new_msg = nullptr;
@@ -1074,7 +1075,7 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 						data_len += ((msg_struct*)new_msg)->msg_length;
 					}
 				}
-				else
+				else*/
 				{
 					//insert into recv_tensor...
 					void* new_msg = recv_list->data_ptr;
