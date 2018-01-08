@@ -1474,8 +1474,8 @@ void fun_dump( int no)
 	//free( stack_info);
 
 	//free anything
-	std::this_thread::sleep_for(std::chrono::seconds(100));
-	exit(0);
+	std::this_thread::sleep_for(std::chrono::seconds(10));
+	exit(-1);
 
 	//fflush(NULL);
 	//exit(0);
