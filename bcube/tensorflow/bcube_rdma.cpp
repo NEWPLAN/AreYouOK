@@ -554,7 +554,7 @@ static void* corcurency_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 	return _data;
 }
 
-static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, int index)
+static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, uint32_t index)
 {
 	struct context *ctx = (struct context *)id->context;
 
