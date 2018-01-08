@@ -70,10 +70,8 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 	//show_msg(msg);
 	char* tensor_name = (char*)((char*)msg + sizeof(msg_struct));
 	char* tensor_data = (char*)(tensor_name + msg_tp->name_len);
-	printf("check 0\n");
 	if (msg_tp->t_ops == ALLREDUCE)
 	{
-		printf("check 01\n");
 		char tmp_char = *tensor_data;
 		*tensor_data = 0;
 		e.tensor_name = std::string(tensor_name);
@@ -94,17 +92,14 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 		char* stop_pos = (char*)msg + msg_tp->msg_length;
 
 		char tmp_char = *tensor_data;
-		printf("check 1\n");
 		*tensor_data = 0;
 		e.tensor_name = std::string(tensor_name);
 		*tensor_data = tmp_char;
-		printf("check 2,%s\n", e.tensor_name.c_str());
 
 		e.start_position = msg_tp->start_pos;
 		e.tensor_nums = msg_tp->nums;
 		while (tensor_shape < stop_pos)
 		{
-			printf("check 3\n");
 			Tensor_Info _part_tensor;
 			auto block_size = *(int*)tensor_shape;
 			_part_tensor.tensor_shape = block_size;
@@ -120,9 +115,7 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 			tensor_data += block_size * type_size;
 			e.gather_ptr.push_back(std::move(_part_tensor));
 			tensor_shape += sizeof(int);
-			printf("check 4\n");
 		}
-		printf("check 5\n");
 		return;
 	}
 	else
