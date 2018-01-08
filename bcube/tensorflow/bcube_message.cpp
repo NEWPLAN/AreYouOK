@@ -111,7 +111,7 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 			_part_tensor.tensor_ptr = (void*)std::malloc(block_size * type_size);
 			if (_part_tensor.tensor_ptr == nullptr)
 			{
-				printf("fatal error in malloc will exit now\n");
+				printf("fatal error in malloc(%u) will exit now\n", block_size * type_size);
 				exit(-1);
 			}
 			//assert(_part_tensor.tensor_ptr != nullptr);
