@@ -585,7 +585,7 @@ static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, uint32_t in
 	std::memcpy(_buff, (char*)(&msg_len), sizeof(uint32_t));
 	_buff += sizeof(uint32_t);
 	std::memcpy(_buff, (char*)(nit->data_ptr), msg_len);
-	_write_remote(id, msg_len, index);
+	_write_remote(id, msg_len + sizeof(uint32_t), index);
 
 	return nit;
 }
