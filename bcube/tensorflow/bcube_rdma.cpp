@@ -512,8 +512,8 @@ static void* corcurency_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 
 	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
 	{
-		log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
-		log_info("imm_data is %d\n", wc->imm_data);
+		//log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
+		//log_info("imm_data is %d\n", wc->imm_data);
 		//uint32_t size = ntohl(wc->imm_data);
 		uint32_t index = wc->imm_data;
 		uint32_t size = *((uint32_t*)(ctx->buffer[index]));
@@ -593,8 +593,8 @@ static node_item* concurrency_send_by_RDMA(struct ibv_wc *wc, node_item* nit, in
 
 	if (wc->opcode == IBV_WC_RECV_RDMA_WITH_IMM)
 	{
-		log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
-		log_info("imm_data is %d\n", wc->imm_data);
+		//log_info("recv with IBV_WC_RECV_RDMA_WITH_IMM\n");
+		//log_info("imm_data is %d\n", wc->imm_data);
 		_post_receive(id, wc->imm_data);
 		nit = send_tensor(id, nit, wc->imm_data);
 	}
@@ -1078,6 +1078,7 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 				else*/
 				{
 					//insert into recv_tensor...
+					log_info("before decode : %u\n", recv_list->data_len);
 					void* new_msg = recv_list->data_ptr;
 					received_tensor_entry e;
 					show_msg(new_msg);
