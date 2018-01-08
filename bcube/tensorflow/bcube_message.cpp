@@ -204,7 +204,6 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		for (int block_index = 0; block_index < block_nums; block_index++)
 		{
 			*(shape_position) = e.gather_tensor[start_pos + block_index].tensor_shape;
-			printf("shape:::::::::: %d\n", *(shape_position));
 			if (tensor_position >= (malloc_ptr + msg_ptr->msg_length))
 			{
 				printf("error@@@@@@@@@@@@@@@@@@@@@@@@\n");
