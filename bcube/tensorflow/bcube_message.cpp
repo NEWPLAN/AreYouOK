@@ -59,9 +59,7 @@ static void show_msg(void* row_data)
 
 void tensor_msg::decode(received_tensor_entry& e, void* msg)
 {
-	//assert(msg != nullptr);
 	msg_struct* msg_tp = (msg_struct*)msg;
-	//assert(msg_tp->data[0] == ',');
 	if (msg_tp->data[0] != ',')
 	{
 		printf("receive error...\n");
@@ -109,7 +107,6 @@ void tensor_msg::decode(received_tensor_entry& e, void* msg)
 				printf("fatal error in malloc(block_size = %d,type_size = %d) will exit now\n", block_size, type_size);
 				exit(-1);
 			}
-			//assert(_part_tensor.tensor_ptr != nullptr);
 			std::memcpy(_part_tensor.tensor_ptr,
 			            tensor_data, block_size * type_size);
 			tensor_data += block_size * type_size;
@@ -182,10 +179,9 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		auto malloc_ptr = (char*)std::malloc(*total_length);
 		if (malloc_ptr == nullptr)
 		{
-			printf("error!!!!!!!!!!!!!!!!!!!!!!!\n");
+			printf("error in malloc mem : size is %d\n", *total_length);
 			exit(-1);
 		}
-		//assert(malloc_ptr != nullptr);
 		memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
 		msg_ptr->name_len = e.tensor_name.length();
@@ -206,7 +202,7 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 			*(shape_position) = e.gather_tensor[start_pos + block_index].tensor_shape;
 			if (tensor_position >= (malloc_ptr + msg_ptr->msg_length))
 			{
-				printf("error@@@@@@@@@@@@@@@@@@@@@@@@\n");
+				printf("error in padding message\n");
 				exit(-1);
 			}
 			std::memcpy(tensor_position, e.gather_tensor[start_pos + block_index].tensor_ptr,
@@ -219,6 +215,7 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 	else
 	{
 		perror("error in unkonwn tensor ops\n");
+		exit(-1);
 	}
 }
 

@@ -28,6 +28,7 @@ python examples/tensorflow_mnist.py
 
 as for rdma is not so good...
 
+383+248+118+127+95+40+185+115+88+155+222+97+760+228+190+123+1582+1387=6143
 
 NEWPLAN
 

@@ -41,7 +41,6 @@
 #include <cuda_runtime.h>
 #endif
 
-//typedef char* tensor;
 /*
 *include all tensor infos
 */

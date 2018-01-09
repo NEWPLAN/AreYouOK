@@ -90,8 +90,8 @@ void Utils::getScatterMatrix(int p, int s, int n, int k, int N, int**sendMatrix,
 		Utils::Convert2Array(recv_id, n, recv_addr);
 		int loc = recv_addr[l];
 		//int temp_val[k + 2];
-		int * temp_val = new int[k +2];
-		for (int index = 0; index < k+2; index++)temp_val[index] = 0;
+		int * temp_val = new int[k + 2];
+		for (int index = 0; index < k + 2; index++)temp_val[index] = 0;
 
 		for (int i = 0; i <= k + 1; i++)
 		{
@@ -174,7 +174,7 @@ void Utils::getGatherMatrix(int p, int s, int n, int k, int N, int**sendMatrix, 
 		Utils::getOneHopNeighbour(send_id, l, n, k, recv_neighbours);
 		for (i = 0; i < n - 1; i++)
 		{
-		    //printf("send id: %d\t rev neigh: %d\t stax: %d\n",send_id,recv_neighbours[i],sta_idx);
+			//printf("send id: %d\t rev neigh: %d\t stax: %d\n",send_id,recv_neighbours[i],sta_idx);
 			sendMatrix[send_id][recv_neighbours[i]] = sta_idx;
 		}
 		delete[]temp_val;

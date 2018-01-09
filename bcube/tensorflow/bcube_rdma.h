@@ -29,21 +29,6 @@ enum message_id
 	MSG_DONE
 };
 
-/******
-struct message
-{
-	int id;
-	union
-	{
-		struct
-		{
-			uint64_t addr;
-			uint32_t rkey;
-		} mr;
-	} data;
-};
-********/
-
 typedef struct _key_exchange_
 {
 	int id;
@@ -90,23 +75,6 @@ struct context
 	uint32_t 		 peer_rkey[MAX_CONCURRENCY];
 };
 
-/***************
-struct _context
-{
-	char *buffer;
-	struct ibv_context *ibv_ctx;
-	struct ibv_pd *pd;
-	struct ibv_cq *cq;
-	struct ibv_comp_channel *comp_channel;
-	struct ibv_mr *buffer_mr;
-	struct message *msg;
-	struct ibv_mr *msg_mr;
-	pthread_t cq_poller_thread;
-	uint64_t peer_addr;
-	uint32_t peer_rkey;
-	bool remote_idle;
-};
-*************/
 
 struct bcube_global_struct;
 struct bcube_struct;
