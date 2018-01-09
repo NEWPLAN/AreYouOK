@@ -47,10 +47,6 @@ const size_t BUFFER_SIZE = 50 * 1024 * 1024 + 1;
 static std::atomic_bool rdma_server_establisted(false);
 static std::atomic_bool rdma_client_establisted(false);
 
-static bool enable_padding = false;
-
-static node_item* out_send_list [20] = {nullptr};
-
 static void rc_die(const char *reason)
 {
 	extern int errno;
@@ -1015,7 +1011,6 @@ static void rdma_client_init(bcube_struct& bs)
 					//bs.neighbor_info[lev][index].send_list = nit;
 					bs.topo[0][bs.neighbor_info[lev][index].node_index].send_list = nit;
 					printf("out node id is %d\n", bs.neighbor_info[lev][index].node_index);
-					out_send_list[bs.neighbor_info[lev][index].node_index] = nit;
 					TEST_NZ(pthread_create(&ctx->cq_poller_thread, NULL, process_CQ_send, (void*)rtp));
 					std::cout << local_eth << " has connected to server[ " << bs.neighbor_info[lev][index].ip << " , " << bs.server_port << " ]" << std::endl;
 
