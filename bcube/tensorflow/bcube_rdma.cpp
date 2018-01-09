@@ -503,7 +503,7 @@ static void _build_params(struct rdma_conn_param *params)
 {
 	memset(params, 0, sizeof(*params));
 
-	params->initiator_depth = params->responder_resources = MAX_CONCURRENCY;
+	params->initiator_depth = params->responder_resources = 1;
 	params->rnr_retry_count = 7; /* infinite retry */
 	params->retry_count = 7;
 }
