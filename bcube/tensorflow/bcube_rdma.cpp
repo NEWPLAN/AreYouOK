@@ -499,7 +499,7 @@ static struct ibv_pd * rc_get_pd(struct rdma_cm_id *id)
 	return ctx->pd;
 }
 
-static void show_device()
+static int show_device()
 {
 	std::cout << "------------------------------------------------" << std::endl;
 	int num_devices;
