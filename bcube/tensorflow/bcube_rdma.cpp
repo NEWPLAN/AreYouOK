@@ -625,9 +625,12 @@ static void _build_params(struct rdma_conn_param *params)
 
 	show_device();
 
-	params->initiator_depth = params->responder_resources = 16;
+	params->initiator_depth = params->responder_resources = 1;
 	params->rnr_retry_count = 7; /* infinite retry */
 	params->retry_count = 7;
+	//new add
+	params->max_rd_atomic = 1;
+	params->path_mtu = 4096;
 }
 
 static void _build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
