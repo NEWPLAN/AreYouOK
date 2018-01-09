@@ -137,8 +137,13 @@ void tensor_msg::encode(tensor_table_entry& e, void** msg,
 		auto tensor_size = type_size * element_nums;
 		*total_length = sizeof(msg_struct) + e.tensor_name.length() + tensor_size;
 		auto malloc_ptr = (char*)std::malloc(*total_length);
-		assert(malloc_ptr != nullptr);
-		memset(malloc_ptr, 0, *total_length);
+		if (malloc_ptr == nullptr)
+		{
+			printf("fatal error in malloc mem\n");
+			exit(-1);
+		}
+		//assert(malloc_ptr != nullptr);
+		//memset(malloc_ptr, 0, *total_length);
 		auto msg_ptr = (msg_struct*)malloc_ptr;
 		msg_ptr->name_len = e.tensor_name.length();
 		msg_ptr->data[0] = ',';/*flags*/
