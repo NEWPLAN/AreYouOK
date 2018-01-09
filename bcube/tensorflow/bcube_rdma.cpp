@@ -625,7 +625,7 @@ static void _build_params(struct rdma_conn_param *params)
 
 	show_device();
 
-	params->initiator_depth = params->responder_resources = 1;
+	params->initiator_depth = params->responder_resources = 16;
 	params->rnr_retry_count = 7; /* infinite retry */
 	params->retry_count = 7;
 }
