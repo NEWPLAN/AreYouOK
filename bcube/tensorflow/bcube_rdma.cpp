@@ -347,6 +347,8 @@ static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, uint32_t in
 	std::memcpy(_buff, (char*)(nit->data_ptr), msg_len);
 	_write_remote(id, msg_len + sizeof(uint32_t), index);
 
+	std::free((char*)(nit->data_ptr));
+
 	return nit;
 }
 
@@ -629,8 +631,7 @@ static void _build_params(struct rdma_conn_param *params)
 	params->rnr_retry_count = 7; /* infinite retry */
 	params->retry_count = 7;
 	//new add
-	params->max_rd_atomic = 1;
-	params->path_mtu = 4096;
+
 }
 
 static void _build_context(struct rdma_cm_id *id, bool is_server, node_item* nit)
