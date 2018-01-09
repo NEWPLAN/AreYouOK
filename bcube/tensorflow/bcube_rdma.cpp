@@ -816,15 +816,19 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 	auto& recv_chain = _recv_chain;
 	msg_struct msg_buf;
 
+	for (auto& recv_list : recv_chain)
+	{
+		if (recv_list == nullptr)
+		{
+			printf("fatal error in malloc recv_list！！！\n");
+			exit(-1);
+		}
+	}
+
 	while (true)
 	{
 		for (auto& recv_list : recv_chain)
 		{
-			if (recv_list == nullptr)
-			{
-				printf("fatal error in malloc recv_list！！！\n");
-				exit(-1);
-			}
 			if (recv_list->next != nullptr)
 			{
 				{
@@ -835,7 +839,6 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 				}
 				{
 					//insert into recv_tensor...
-
 					void* new_msg = recv_list->data_ptr;
 					msg_struct* msg = (msg_struct*)new_msg;
 					received_tensor_entry e;
@@ -843,7 +846,6 @@ void recv_tensor_from_list(bcube_global_struct& bgs, std::vector<node_item*>& _r
 					tensor_msg::decode(e, new_msg);
 					unlock_insert_to_recv_queue(bgs, e);
 					new_msg = nullptr;
-
 				}
 				std::free((char*)(recv_list->data_ptr));
 				recv_list->data_ptr = nullptr;
