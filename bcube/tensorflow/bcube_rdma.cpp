@@ -269,7 +269,7 @@ static void _ack_remote(struct rdma_cm_id *id, uint32_t index)
 	TEST_NZ(ibv_post_send(id->qp, &wr, &bad_wr));
 }
 
-static void* concurrent_send_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
+static void* concurrent_recv_by_RDMA(struct ibv_wc *wc, uint32_t& recv_len)
 {
 	struct rdma_cm_id *id = (struct rdma_cm_id *)(uintptr_t)wc->wr_id;
 	struct context *ctx = (struct context *)id->context;
@@ -411,7 +411,7 @@ static void *process_CQ_recv(void *rtp)
 				/*****here to modified recv* wc---->wc[index]****/
 				void* recv_data = nullptr;
 				uint32_t recv_len;
-				recv_data = concurrent_send_by_RDMA(&wc[index], recv_len);
+				recv_data = concurrent_recv_by_RDMA(&wc[index], recv_len);
 				if (recv_data != nullptr)
 				{
 					//received data, will append to recv_chain...

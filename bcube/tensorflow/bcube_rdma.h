@@ -10,15 +10,18 @@
 
 typedef struct _data_list_
 {
-	char* data_ptr;
-	struct _data_list_* next;
-	uint32_t data_len;
+	char*                data_ptr;//point to memory prealloc
+	struct _data_list_*  next;//point next point
+	uint32_t             data_len;//recv data length
+
+	uint64_t			 id;//indicate the src,onice be used, should back to the origin src list
+	uint32_t			 mem_size;//point to the origin mem size,should never be change since inited
 } node_item;
 
 typedef struct _rdma_pack_
 {
 	struct rdma_cm_id* rdma_id;
-	node_item* nit;
+	node_item*         nit;
 } _rdma_thread_pack_;
 
 enum message_id
