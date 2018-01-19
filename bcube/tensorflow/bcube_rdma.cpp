@@ -6,7 +6,7 @@
 #include <rdma/rdma_cma.h>
 
 //50 M for default size;
-const size_t BUFFER_SIZE = 70 * 1024 * 1024 + 1;
+const size_t BUFFER_SIZE = 100 * 1024 * 1024 + 1;
 #define TIMEOUT_IN_MS 500
 #define TEST_NZ(x) do { if ( (x)) rc_die("error: " #x " failed (returned non-zero)." ); } while (0)
 #define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
@@ -334,6 +334,7 @@ static node_item* send_tensor(struct rdma_cm_id *id, node_item* nit, uint32_t in
 	if ((msg_len + sizeof(uint32_t)) > BUFFER_SIZE)
 	{
 		perror("fatal error, send msg length is too long\n");
+		//printf("message length is %d, message name: %100s\n", meg_len, ((msg_struct*)(nit->data_ptr))->msg_name);
 		exit(-1);
 	}
 
