@@ -1206,6 +1206,12 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
                            Tensor* output, int root_rank, GPU_EVENT_IF_CUDA ready_event,
                            const std::string name, const int device, StatusCallback callback)
 {
+	if (tensor.tensor_data().size() + 1024 > 100 * 1024 * 1024)
+	{
+		printf("%s will back to directly\n", name.c_str());
+		callback(Status::OK());
+		return;
+	}
 	BCUBE_TYPE dtype;
 	Status status = DataTypeToBcubeType(tensor.dtype(), &dtype);
 	if (!status.ok())
@@ -1213,6 +1219,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
 		callback(status);
 		return;
 	}
+
 
 	std::vector<int64_t> _tensor_shape;
 	std::string _shape2string;

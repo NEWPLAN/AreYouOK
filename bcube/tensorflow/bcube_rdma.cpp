@@ -6,7 +6,7 @@
 #include <rdma/rdma_cma.h>
 
 //50 M for default size;
-const size_t BUFFER_SIZE = 50 * 1024 * 1024 + 1;
+const size_t BUFFER_SIZE = 100 * 1024 * 1024 + 1;
 #define TIMEOUT_IN_MS 500
 #define TEST_NZ(x) do { if ( (x)) rc_die("error: " #x " failed (returned non-zero)." ); } while (0)
 #define TEST_Z(x)  do { if (!(x)) rc_die("error: " #x " failed (returned zero/null)."); } while (0)
