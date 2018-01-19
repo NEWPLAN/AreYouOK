@@ -1206,7 +1206,7 @@ void bcube_broadcast_queue(OpKernelContext* context, const Tensor& tensor,
                            Tensor* output, int root_rank, GPU_EVENT_IF_CUDA ready_event,
                            const std::string name, const int device, StatusCallback callback)
 {
-	if (tensor.tensor_data().size() + 1024 > 70 * 1024 * 1024)
+	if (tensor.tensor_data().size() * 3 + 1024 > 100 * 1024 * 1024)
 	{
 		printf("%s will back to directly\n", name.c_str());
 		callback(Status::OK());
