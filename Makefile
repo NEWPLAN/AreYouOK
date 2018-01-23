@@ -10,7 +10,7 @@ CFLAGS += $(WARNING) -g  -std=c++11 -Os
 LDFLAGS += -lm  -pthread
 PROC_NAME += areyouok
 HEAD_DEPEND += 
-SOURCE +=  areyouok,cpp
+SOURCE +=  areyouok.cpp
 OBJS_DEPEND=$(subst .cpp,.o, $(SOURCE))
 all: clean $(PROC_NAME)
 	@echo 'make done'
