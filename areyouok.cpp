@@ -24,19 +24,18 @@ void enqueue_ques(std::vector<std::string>& ques_pool)
 
 int main(int argc, char** argv)
 {
-	bool res;
 	std::vector<std::string> ques_pool;
 
 	enqueue_ques(ques_pool);
 
 	for (auto& it : ques_pool)
 	{
-		if (question(it))goto exit_fina;
+		if (question(it))goto exit_failure;
 	}
 
 	std::cout << "You are a good man..., Bye." << std::endl;
 	return 0;
-exit_fina:
+exit_failure:
 	std::cout << "Your answer is not my expected..., leaving you now!" << std::endl;
 	return -1;
 }
