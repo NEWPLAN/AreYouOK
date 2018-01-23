@@ -14,7 +14,7 @@ bool question(std::string ques)
 
 void enqueue_ques(std::vector<std::string>& ques_pool)
 {
-	ques_pool.push_back("How are you");
+	ques_pool.push_back("How are you?");
 	ques_pool.push_back("Are you OK?");
 	ques_pool.push_back("Do you like Mi4i?");
 	ques_pool.push_back("I'm very happy to be in China (emm, in Indina)..., do you like me?");
@@ -35,6 +35,7 @@ int main(int argc, char** argv)
 	}
 
 	std::cout << "You are a good man..., Bye." << std::endl;
+	return 0;
 exit_fina:
 	std::cout << "Your answer is not my expected..., leaving you now!" << std::endl;
 	return -1;
