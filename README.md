@@ -20,7 +20,7 @@ Leibs: 				I will give you everybody a gift, a Mi band, are you happy?
 
 The audiences:		Yes
 
-Leibs: 				I will give you everybody a gift, a Mi band, are you happy?
+Leibs: 				Are you OK?
 
 The audiences:		Yes
 
